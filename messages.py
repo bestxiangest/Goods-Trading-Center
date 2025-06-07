@@ -8,11 +8,11 @@ from sqlalchemy import and_, or_, func
 messages_bp = Blueprint('messages', __name__, url_prefix='/api/v1/messages')
 
 @messages_bp.route('', methods=['POST'])
-@jwt_required()
 def send_message():
     """发送消息"""
     try:
-        current_user_id = get_jwt_identity()
+        # 使用固定的管理员用户ID
+        current_user_id = 1
         data = request.get_json()
         
         if not data:
@@ -73,11 +73,11 @@ def send_message():
         return error_response(f"发送消息失败: {str(e)}", 500)
 
 @messages_bp.route('', methods=['GET'])
-@jwt_required()
 def get_messages():
     """获取消息列表"""
     try:
-        current_user_id = get_jwt_identity()
+        # 使用固定的管理员用户ID
+        current_user_id = 1
         page = request.args.get('page', 1, type=int)
         per_page = request.args.get('per_page', 20, type=int)
         message_type = request.args.get('type')
@@ -125,11 +125,11 @@ def get_messages():
         return error_response(f"获取消息列表失败: {str(e)}", 500)
 
 @messages_bp.route('/<int:message_id>', methods=['GET'])
-@jwt_required()
 def get_message(message_id):
     """获取消息详情"""
     try:
-        current_user_id = get_jwt_identity()
+        # 使用固定的管理员用户ID
+        current_user_id = 1
         message = Message.query.get(message_id)
         
         if not message:
@@ -168,11 +168,11 @@ def get_message(message_id):
         return error_response(f"获取消息详情失败: {str(e)}", 500)
 
 @messages_bp.route('/<int:message_id>/read', methods=['PUT'])
-@jwt_required()
 def mark_message_read(message_id):
     """标记消息为已读"""
     try:
-        current_user_id = get_jwt_identity()
+        # 使用固定的管理员用户ID
+        current_user_id = 1
         message = Message.query.get(message_id)
         
         if not message:
@@ -197,11 +197,11 @@ def mark_message_read(message_id):
         return error_response(f"标记消息已读失败: {str(e)}", 500)
 
 @messages_bp.route('/batch/read', methods=['PUT'])
-@jwt_required()
 def mark_messages_read():
     """批量标记消息为已读"""
     try:
-        current_user_id = get_jwt_identity()
+        # 使用固定的管理员用户ID
+        current_user_id = 1
         data = request.get_json()
         
         if not data or 'message_ids' not in data:
@@ -239,11 +239,11 @@ def mark_messages_read():
         return error_response(f"批量标记消息已读失败: {str(e)}", 500)
 
 @messages_bp.route('/conversations', methods=['GET'])
-@jwt_required()
 def get_conversations():
     """获取会话列表"""
     try:
-        current_user_id = get_jwt_identity()
+        # 使用固定的管理员用户ID
+        current_user_id = 1
         page = request.args.get('page', 1, type=int)
         per_page = request.args.get('per_page', 20, type=int)
         
@@ -322,11 +322,11 @@ def get_conversations():
         return error_response(f"获取会话列表失败: {str(e)}", 500)
 
 @messages_bp.route('/conversation/<int:user_id>', methods=['GET'])
-@jwt_required()
 def get_conversation_messages(user_id):
     """获取与特定用户的对话消息"""
     try:
-        current_user_id = get_jwt_identity()
+        # 使用固定的管理员用户ID
+        current_user_id = 1
         page = request.args.get('page', 1, type=int)
         per_page = request.args.get('per_page', 50, type=int)
         
@@ -371,11 +371,11 @@ def get_conversation_messages(user_id):
         return error_response(f"获取对话消息失败: {str(e)}", 500)
 
 @messages_bp.route('/<int:message_id>', methods=['DELETE'])
-@jwt_required()
 def delete_message(message_id):
     """删除消息"""
     try:
-        current_user_id = get_jwt_identity()
+        # 使用固定的管理员用户ID
+        current_user_id = 1
         current_user = User.query.get(current_user_id)
         message = Message.query.get(message_id)
         
@@ -400,11 +400,11 @@ def delete_message(message_id):
         return error_response(f"删除消息失败: {str(e)}", 500)
 
 @messages_bp.route('/statistics', methods=['GET'])
-@jwt_required()
 def get_message_statistics():
     """获取消息统计信息"""
     try:
-        current_user_id = get_jwt_identity()
+        # 使用固定的管理员用户ID
+        current_user_id = 1
         
         # 收到的消息统计
         received_total = Message.query.filter_by(recipient_id=current_user_id).count()

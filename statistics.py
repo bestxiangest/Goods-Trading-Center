@@ -1,6 +1,5 @@
 from flask import Blueprint, request, jsonify
-from flask_jwt_extended import jwt_required, get_jwt_identity
-from models import User, Item, Request, Review, Message, db
+from models import User, Item, Request, Review, Message, ItemCategory, db
 from utils import success_response, error_response, get_current_user
 from sqlalchemy import func, and_
 from datetime import datetime, timedelta
@@ -8,14 +7,9 @@ from datetime import datetime, timedelta
 statistics_bp = Blueprint('statistics', __name__, url_prefix='/api/v1')
 
 @statistics_bp.route('/users/count', methods=['GET'])
-@jwt_required()
 def get_users_count():
     """获取用户总数"""
     try:
-        current_user = get_current_user()
-        if not current_user or not current_user.is_admin:
-            return error_response("权限不足", 403)
-        
         count = User.query.count()
         return success_response(
             data={'count': count},
@@ -25,14 +19,9 @@ def get_users_count():
         return error_response(f"获取用户总数失败: {str(e)}", 500)
 
 @statistics_bp.route('/items/count', methods=['GET'])
-@jwt_required()
 def get_items_count():
     """获取物品总数"""
     try:
-        current_user = get_current_user()
-        if not current_user or not current_user.is_admin:
-            return error_response("权限不足", 403)
-        
         count = Item.query.count()
         return success_response(
             data={'count': count},
@@ -42,14 +31,9 @@ def get_items_count():
         return error_response(f"获取物品总数失败: {str(e)}", 500)
 
 @statistics_bp.route('/requests/count', methods=['GET'])
-@jwt_required()
 def get_requests_count():
     """获取交易请求数量"""
     try:
-        current_user = get_current_user()
-        if not current_user or not current_user.is_admin:
-            return error_response("权限不足", 403)
-        
         status = request.args.get('status')
         query = Request.query
         
@@ -65,14 +49,9 @@ def get_requests_count():
         return error_response(f"获取交易请求数量失败: {str(e)}", 500)
 
 @statistics_bp.route('/reviews/count', methods=['GET'])
-@jwt_required()
 def get_reviews_count():
     """获取评价总数"""
     try:
-        current_user = get_current_user()
-        if not current_user or not current_user.is_admin:
-            return error_response("权限不足", 403)
-        
         count = Review.query.count()
         return success_response(
             data={'count': count},
@@ -82,14 +61,9 @@ def get_reviews_count():
         return error_response(f"获取评价总数失败: {str(e)}", 500)
 
 @statistics_bp.route('/messages/count', methods=['GET'])
-@jwt_required()
 def get_messages_count():
     """获取消息总数"""
     try:
-        current_user = get_current_user()
-        if not current_user or not current_user.is_admin:
-            return error_response("权限不足", 403)
-        
         count = Message.query.count()
         return success_response(
             data={'count': count},
@@ -99,13 +73,9 @@ def get_messages_count():
         return error_response(f"获取消息总数失败: {str(e)}", 500)
 
 @statistics_bp.route('/statistics/today', methods=['GET'])
-@jwt_required()
 def get_today_statistics():
     """获取今日统计数据"""
     try:
-        current_user = get_current_user()
-        if not current_user or not current_user.is_admin:
-            return error_response("权限不足", 403)
         
         today = datetime.now().date()
         tomorrow = today + timedelta(days=1)
@@ -143,13 +113,9 @@ def get_today_statistics():
         return error_response(f"获取今日统计数据失败: {str(e)}", 500)
 
 @statistics_bp.route('/statistics/user-registration-trend', methods=['GET'])
-@jwt_required()
 def get_user_registration_trend():
     """获取用户注册趋势"""
     try:
-        current_user = get_current_user()
-        if not current_user or not current_user.is_admin:
-            return error_response("权限不足", 403)
         
         # 获取最近7天的注册数据
         end_date = datetime.now().date()
@@ -178,22 +144,16 @@ def get_user_registration_trend():
         return error_response(f"获取用户注册趋势失败: {str(e)}", 500)
 
 @statistics_bp.route('/statistics/item-category-distribution', methods=['GET'])
-@jwt_required()
 def get_item_category_distribution():
     """获取物品分类分布"""
     try:
-        current_user = get_current_user()
-        if not current_user or not current_user.is_admin:
-            return error_response("权限不足", 403)
         
         # 获取分类分布数据
-        from models import Category
-        
         distribution = db.session.query(
-            Category.name,
+            ItemCategory.name,
             func.count(Item.item_id).label('count')
-        ).outerjoin(Item, Category.category_id == Item.category_id)\
-         .group_by(Category.category_id, Category.name)\
+        ).outerjoin(Item, ItemCategory.category_id == Item.category_id)\
+         .group_by(ItemCategory.category_id, ItemCategory.name)\
          .all()
         
         distribution_data = [
@@ -212,13 +172,9 @@ def get_item_category_distribution():
         return error_response(f"获取物品分类分布失败: {str(e)}", 500)
 
 @statistics_bp.route('/statistics/request-status-distribution', methods=['GET'])
-@jwt_required()
 def get_request_status_distribution():
     """获取交易请求状态分布"""
     try:
-        current_user = get_current_user()
-        if not current_user or not current_user.is_admin:
-            return error_response("权限不足", 403)
         
         # 获取状态分布数据
         distribution = db.session.query(

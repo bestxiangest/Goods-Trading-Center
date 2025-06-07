@@ -2,61 +2,76 @@
 let currentSection = 'dashboard';
 let currentPage = 1;
 let pageSize = 10;
-let authToken = localStorage.getItem('admin_token');
+// 移除token相关变量
+
+// Chart.js 实例管理
+let userChart = null;
+let categoryChart = null;
 
 // API基础URL
-const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = 'http://localhost:5000/api/v1';
 
 // 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', function() {
     // 检查登录状态
     checkAuthStatus();
-    
-    // 初始化仪表盘
-    showSection('dashboard');
-    
-    // 加载初始数据
-    loadDashboardData();
 });
 
 // 检查认证状态
 function checkAuthStatus() {
-    if (!authToken) {
-        // 如果没有token，重定向到登录页面
+    // 检查是否已登录（简单检查localStorage中的标记）
+    const isLoggedIn = localStorage.getItem('admin_logged_in');
+    
+    if (!isLoggedIn) {
+        // 如果没有登录标记，重定向到登录页面
         window.location.href = '/login';
         return;
     }
     
-    // 验证token有效性
-    fetch(`${API_BASE_URL}/auth/verify`, {
+    // 简单验证（不使用token）
+    fetch(`${API_BASE_URL}/users/verify`, {
         method: 'GET',
         headers: {
-            'Authorization': `Bearer ${authToken}`,
             'Content-Type': 'application/json'
         }
     })
     .then(response => {
         if (!response.ok) {
-            throw new Error('Token invalid');
+            throw new Error('验证失败');
         }
         return response.json();
     })
     .then(data => {
-        if (data.user && data.user.role === 'admin') {
-            document.getElementById('admin-username').textContent = data.user.username;
+        if (data.data && data.data.is_admin) {
+            // 使用保存的用户名
+            const savedUsername = localStorage.getItem('admin_username') || 'admin';
+            document.getElementById('admin-username').textContent = savedUsername;
+            // 只有在认证成功后才初始化页面和加载数据
+            initializeAdminPanel();
         } else {
-            throw new Error('Not admin');
+            throw new Error('非管理员');
         }
     })
     .catch(error => {
-        console.error('Auth check failed:', error);
+        console.error('认证检查失败:', error);
         logout();
     });
 }
 
+// 初始化管理面板
+function initializeAdminPanel() {
+    // 初始化仪表盘
+    showSection('dashboard');
+    
+    // 加载初始数据
+    loadDashboardData();
+}
+
 // 退出登录
 function logout() {
-    localStorage.removeItem('admin_token');
+    localStorage.removeItem('admin_logged_in');
+    localStorage.removeItem('admin_username');
+    localStorage.removeItem('remember_admin');
     window.location.href = '/login';
 }
 
@@ -121,7 +136,6 @@ function showSection(sectionName) {
 function apiRequest(url, options = {}) {
     const defaultOptions = {
         headers: {
-            'Authorization': `Bearer ${authToken}`,
             'Content-Type': 'application/json'
         }
     };
@@ -180,10 +194,10 @@ function loadDashboardData() {
         apiRequest('/statistics/today')
     ])
     .then(([usersCount, itemsCount, pendingRequests, todayStats]) => {
-        document.getElementById('total-users').textContent = usersCount.count || 0;
-        document.getElementById('total-items').textContent = itemsCount.count || 0;
-        document.getElementById('pending-requests').textContent = pendingRequests.count || 0;
-        document.getElementById('today-new').textContent = todayStats.new_items || 0;
+        document.getElementById('total-users').textContent = usersCount.data.count || 0;
+        document.getElementById('total-items').textContent = itemsCount.data.count || 0;
+        document.getElementById('pending-requests').textContent = pendingRequests.data.count || 0;
+        document.getElementById('today-new').textContent = todayStats.data.new_items || 0;
     })
     .catch(error => {
         console.error('Failed to load dashboard data:', error);
@@ -195,17 +209,31 @@ function loadDashboardData() {
 
 // 加载仪表盘图表
 function loadDashboardCharts() {
+    // 销毁现有图表实例
+    if (userChart) {
+        userChart.destroy();
+        userChart = null;
+    }
+    if (categoryChart) {
+        categoryChart.destroy();
+        categoryChart = null;
+    }
+    
     // 用户注册趋势图
     apiRequest('/statistics/user-registration-trend')
-        .then(data => {
+        .then(response => {
+            const data = response.data || [];
+            const labels = data.map(item => item.date);
+            const values = data.map(item => item.count);
+            
             const ctx = document.getElementById('userChart').getContext('2d');
-            new Chart(ctx, {
+            userChart = new Chart(ctx, {
                 type: 'line',
                 data: {
-                    labels: data.labels || [],
+                    labels: labels,
                     datasets: [{
                         label: '新注册用户',
-                        data: data.values || [],
+                        data: values,
                         borderColor: '#4e73df',
                         backgroundColor: 'rgba(78, 115, 223, 0.1)',
                         tension: 0.3
@@ -227,15 +255,19 @@ function loadDashboardCharts() {
         });
     
     // 物品分类分布图
-    apiRequest('/statistics/category-distribution')
-        .then(data => {
+    apiRequest('/statistics/item-category-distribution')
+        .then(response => {
+            const data = response.data || [];
+            const labels = data.map(item => item.category);
+            const values = data.map(item => item.count);
+            
             const ctx = document.getElementById('categoryChart').getContext('2d');
-            new Chart(ctx, {
+            categoryChart = new Chart(ctx, {
                 type: 'doughnut',
                 data: {
-                    labels: data.labels || [],
+                    labels: labels,
                     datasets: [{
-                        data: data.values || [],
+                        data: values,
                         backgroundColor: [
                             '#4e73df',
                             '#1cc88a',
@@ -268,8 +300,9 @@ function loadUsers(page = 1, search = '', filter = '') {
     if (filter) params.append('role', filter);
     
     apiRequest(`/users?${params}`)
-        .then(data => {
-            displayUsers(data.users || []);
+        .then(response => {
+            const data = response.data || {};
+            displayUsers(data.items || []);
             updatePagination('users', data.pagination || {});
         })
         .catch(error => {
@@ -341,7 +374,8 @@ function loadItems(page = 1, search = '', statusFilter = '', categoryFilter = ''
     if (categoryFilter) params.append('category_id', categoryFilter);
     
     apiRequest(`/items?${params}`)
-        .then(data => {
+        .then(response => {
+            const data = response.data || {};
             displayItems(data.items || []);
             updatePagination('items', data.pagination || {});
         })
@@ -406,13 +440,14 @@ function displayItems(items) {
 // 加载分类数据
 function loadCategories() {
     apiRequest('/categories')
-        .then(data => {
+        .then(response => {
+            const data = response.data || [];
             if (currentSection === 'categories') {
-                displayCategories(data.categories || []);
+                displayCategories(data);
             }
             
             // 更新筛选器选项
-            updateCategoryFilters(data.categories || []);
+            updateCategoryFilters(data);
         })
         .catch(error => {
             console.error('Failed to load categories:', error);
@@ -733,7 +768,7 @@ function loadStatistics() {
 
 // 加载交易状态分布图
 function loadTransactionStatusChart() {
-    apiRequest('/statistics/transaction-status')
+    apiRequest('/statistics/request-status-distribution')
         .then(data => {
             const ctx = document.getElementById('transactionStatusChart').getContext('2d');
             new Chart(ctx, {
@@ -764,7 +799,8 @@ function loadTransactionStatusChart() {
 
 // 加载月度活跃度图
 function loadMonthlyActivityChart() {
-    apiRequest('/statistics/monthly-activity')
+    // 暂时使用用户注册趋势数据
+    apiRequest('/statistics/user-registration-trend')
         .then(data => {
             const ctx = document.getElementById('monthlyActivityChart').getContext('2d');
             new Chart(ctx, {
@@ -772,7 +808,7 @@ function loadMonthlyActivityChart() {
                 data: {
                     labels: data.labels || [],
                     datasets: [{
-                        label: '活跃用户数',
+                        label: '新注册用户数',
                         data: data.values || [],
                         backgroundColor: '#4e73df',
                         borderColor: '#4e73df',
@@ -797,7 +833,8 @@ function loadMonthlyActivityChart() {
 
 // 加载用户信誉分布图
 function loadReputationChart() {
-    apiRequest('/statistics/reputation-distribution')
+    // 暂时使用分类分布数据
+    apiRequest('/statistics/item-category-distribution')
         .then(data => {
             const ctx = document.getElementById('reputationChart').getContext('2d');
             new Chart(ctx, {
@@ -1134,11 +1171,13 @@ function showItemDetail(itemId) {
 
 function showRequestDetail(requestId) {
     apiRequest(`/requests/${requestId}`)
-        .then(request => {
+        .then(response => {
+            const request = response.data;
             alert(`请求详情:\n请求ID: ${request.id}\n物品: ${request.item_title}\n请求者: ${request.requester_username}\n状态: ${getRequestStatusText(request.status)}\n时间: ${formatDateTime(request.created_at)}`);
         })
         .catch(error => {
             console.error('Failed to load request detail:', error);
+            showAlert('获取请求详情失败', 'error');
         });
 }
 

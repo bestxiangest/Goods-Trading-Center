@@ -13,7 +13,7 @@ class User(db.Model):
     password_hash = db.Column(db.String(128), nullable=False, comment='密码哈希值')
     email = db.Column(db.String(50), unique=True, nullable=False, comment='邮箱，唯一')
     phone = db.Column(db.String(15), comment='手机号，可选')
-    address = db.Column(db.String(200), nullable=False, comment='街道级地址')
+    address = db.Column(db.String(200), nullable=True, comment='街道级地址')
     latitude = db.Column(db.Numeric(9, 6), comment='用户注册地址的纬度')
     longitude = db.Column(db.Numeric(9, 6), comment='用户注册地址的经度')
     reputation_score = db.Column(db.Float, default=5.0, comment='信誉评分，范围1.0-5.0')
@@ -153,6 +153,7 @@ class Request(db.Model):
     def to_dict(self):
         """转换为字典"""
         return {
+            'id': self.request_id,
             'request_id': self.request_id,
             'item_id': self.item_id,
             'item_title': self.item.title if self.item else None,
@@ -178,6 +179,7 @@ class Review(db.Model):
     def to_dict(self):
         """转换为字典"""
         return {
+            'id': self.review_id,
             'review_id': self.review_id,
             'request_id': self.request_id,
             'reviewer_id': self.reviewer_id,

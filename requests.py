@@ -1,8 +1,8 @@
 from flask import Blueprint, request, jsonify
-from flask_jwt_extended import jwt_required, get_jwt_identity
 from models import Request, Item, User, Message, db
 from utils import success_response, error_response, validate_required_fields, paginate_query
 from datetime import datetime
+from sqlalchemy import and_, or_
 
 requests_bp = Blueprint('requests', __name__, url_prefix='/api/v1/requests')
 
@@ -18,11 +18,11 @@ def create_notification_message(recipient_id, sender_id, message_type, related_i
     db.session.add(message)
 
 @requests_bp.route('', methods=['POST'])
-@jwt_required()
 def create_request():
-    """发起交换请求"""
+    """创建交易请求"""
     try:
-        current_user_id = get_jwt_identity()
+        # 使用固定的管理员用户ID
+        current_user_id = 1
         data = request.get_json()
         
         if not data:
@@ -100,11 +100,11 @@ def create_request():
         return error_response(f"发送请求失败: {str(e)}", 500)
 
 @requests_bp.route('/<int:request_id>', methods=['GET'])
-@jwt_required()
 def get_request(request_id):
-    """获取请求详情"""
+    """获取交易请求详情"""
     try:
-        current_user_id = get_jwt_identity()
+        # 使用固定的管理员用户ID
+        current_user_id = 1
         req = Request.query.get(request_id)
         
         if not req:
@@ -131,17 +131,18 @@ def get_request(request_id):
         return error_response(f"获取请求详情失败: {str(e)}", 500)
 
 @requests_bp.route('', methods=['GET'])
-@jwt_required()
 def get_requests():
-    """获取请求列表"""
+    """获取交易请求列表"""
     try:
-        current_user_id = get_jwt_identity()
+        # 使用固定的管理员用户ID
+        current_user_id = 1
         page = request.args.get('page', 1, type=int)
         per_page = request.args.get('per_page', 20, type=int)
         status = request.args.get('status')
         request_type = request.args.get('type')  # 'sent' 或 'received'
         
-        query = Request.query
+        # 联接相关表以获取完整信息
+        query = Request.query.join(Item).join(User, Request.requester_id == User.user_id)
         
         # 根据类型筛选
         if request_type == 'sent':
@@ -149,13 +150,8 @@ def get_requests():
             query = query.filter(Request.requester_id == current_user_id)
         elif request_type == 'received':
             # 我收到的请求
-            query = query.join(Item).filter(Item.user_id == current_user_id)
-        else:
-            # 所有相关的请求
-            query = query.filter(
-                (Request.requester_id == current_user_id) |
-                (Request.item.has(user_id=current_user_id))
-            )
+            query = query.filter(Item.user_id == current_user_id)
+        # 管理员可以查看所有请求，不做额外筛选
         
         # 状态筛选
         if status:
@@ -163,15 +159,33 @@ def get_requests():
         
         query = query.order_by(Request.created_at.desc())
         
-        result = paginate_query(query, page, per_page)
+        # 直接获取Request对象而不是使用paginate_query
+        pagination = query.paginate(
+            page=page,
+            per_page=per_page,
+            error_out=False
+        )
         
-        # 为每个请求添加物品信息
-        for request_data in result['items']:
-            req = Request.query.get(request_data['request_id'])
-            request_data['item'] = req.item.to_dict(include_images=False)
+        # 转换数据格式，添加物品所有者信息
+        requests_data = []
+        for req in pagination.items:
+            req_dict = req.to_dict()
+            # 添加物品所有者用户名
+            req_dict['owner_username'] = req.item.user.username if req.item and req.item.user else None
+            requests_data.append(req_dict)
         
         return success_response(
-            data=result,
+            data={
+                'requests': requests_data,
+                'pagination': {
+                    'page': pagination.page,
+                    'per_page': pagination.per_page,
+                    'total': pagination.total,
+                    'pages': pagination.pages,
+                    'has_prev': pagination.has_prev,
+                    'has_next': pagination.has_next
+                }
+            },
             message="获取请求列表成功"
         )
         
@@ -179,11 +193,11 @@ def get_requests():
         return error_response(f"获取请求列表失败: {str(e)}", 500)
 
 @requests_bp.route('/<int:request_id>/status', methods=['PUT'])
-@jwt_required()
 def update_request_status(request_id):
-    """更新请求状态"""
+    """更新交易请求状态"""
     try:
-        current_user_id = get_jwt_identity()
+        # 使用固定的管理员用户ID
+        current_user_id = 1
         req = Request.query.get(request_id)
         
         if not req:
@@ -235,4 +249,135 @@ def update_request_status(request_id):
                     sender_id=None,  # 系统消息
                     message_type='status_update',
                     related_id=other_req.request_id,
-                    content=f"很抱歉，您对物品
+                    content=f"很抱歉，您对物品'{req.item.title}'的请求已被拒绝，该物品已被其他用户预定。"
+                )
+        
+        # 创建通知消息给请求者
+        if new_status == 'accepted':
+            notification_content = f"恭喜！您对物品'{req.item.title}'的请求已被接受。"
+            recipient_id = req.requester_id
+        elif new_status == 'rejected':
+            notification_content = f"很抱歉，您对物品'{req.item.title}'的请求已被拒绝。"
+            recipient_id = req.requester_id
+        else:  # cancelled
+            notification_content = f"用户取消了对物品'{req.item.title}'的请求。"
+            recipient_id = req.item.user_id
+        
+        create_notification_message(
+            recipient_id=recipient_id,
+            sender_id=current_user_id,
+            message_type='status_update',
+            related_id=request_id,
+            content=notification_content
+        )
+        
+        db.session.commit()
+        
+        return success_response(
+            data=req.to_dict(),
+            message="请求状态更新成功"
+        )
+        
+    except Exception as e:
+        db.session.rollback()
+        return error_response(f"更新请求状态失败: {str(e)}", 500)
+
+@requests_bp.route('/<int:request_id>/complete', methods=['PUT'])
+def complete_request(request_id):
+    """完成交易请求"""
+    try:
+        # 使用固定的管理员用户ID
+        current_user_id = 1
+        req = Request.query.get(request_id)
+        
+        if not req:
+            return error_response("请求不存在", 404)
+        
+        # 检查请求状态
+        if req.status != 'accepted':
+            return error_response("只能完成已接受的请求")
+        
+        # 检查权限（交易双方都可以标记完成）
+        if current_user_id not in [req.requester_id, req.item.user_id]:
+            return error_response("只有交易双方可以完成交易", 403)
+        
+        # 更新请求和物品状态
+        req.status = 'completed'
+        req.item.status = 'sold'
+        req.updated_at = datetime.utcnow()
+        
+        # 确定通知对象
+        if current_user_id == req.requester_id:
+            recipient_id = req.item.user_id
+        else:
+            recipient_id = req.requester_id
+        
+        notification_content = f"物品'{req.item.title}'的交易已完成！请为对方评价。"
+        
+        create_notification_message(
+            recipient_id=recipient_id,
+            sender_id=current_user_id,
+            message_type='status_update',
+            related_id=request_id,
+            content=notification_content
+        )
+        
+        db.session.commit()
+        
+        return success_response(
+            data=req.to_dict(),
+            message="交易完成"
+        )
+        
+    except Exception as e:
+        db.session.rollback()
+        return error_response(f"完成交易失败: {str(e)}", 500)
+
+@requests_bp.route('/statistics', methods=['GET'])
+def get_request_statistics():
+    """获取交易请求统计"""
+    try:
+        # 使用固定的管理员用户ID
+        current_user_id = 1
+        
+        # 我发送的请求统计
+        sent_stats = {
+            'total': Request.query.filter_by(requester_id=current_user_id).count(),
+            'pending': Request.query.filter_by(requester_id=current_user_id, status='pending').count(),
+            'accepted': Request.query.filter_by(requester_id=current_user_id, status='accepted').count(),
+            'rejected': Request.query.filter_by(requester_id=current_user_id, status='rejected').count(),
+            'cancelled': Request.query.filter_by(requester_id=current_user_id, status='cancelled').count(),
+            'completed': Request.query.filter_by(requester_id=current_user_id, status='completed').count()
+        }
+        
+        # 我收到的请求统计
+        from sqlalchemy import and_
+        received_stats = {
+            'total': Request.query.join(Item).filter(Item.user_id == current_user_id).count(),
+            'pending': Request.query.join(Item).filter(
+                and_(Item.user_id == current_user_id, Request.status == 'pending')
+            ).count(),
+            'accepted': Request.query.join(Item).filter(
+                and_(Item.user_id == current_user_id, Request.status == 'accepted')
+            ).count(),
+            'rejected': Request.query.join(Item).filter(
+                and_(Item.user_id == current_user_id, Request.status == 'rejected')
+            ).count(),
+            'cancelled': Request.query.join(Item).filter(
+                and_(Item.user_id == current_user_id, Request.status == 'cancelled')
+            ).count(),
+            'completed': Request.query.join(Item).filter(
+                and_(Item.user_id == current_user_id, Request.status == 'completed')
+            ).count()
+        }
+        
+        return success_response(
+            data={
+                'sent': sent_stats,
+                'received': received_stats
+            },
+            message="获取请求统计成功"
+        )
+        
+    except Exception as e:
+        return error_response(f"获取请求统计失败: {str(e)}", 500)

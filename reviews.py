@@ -1,9 +1,8 @@
 from flask import Blueprint, request, jsonify
-from flask_jwt_extended import jwt_required, get_jwt_identity
 from models import Review, Request, User, Message, db
 from utils import success_response, error_response, validate_required_fields, paginate_query, update_user_reputation
 from datetime import datetime
-from sqlalchemy import and_, or_, func
+from sqlalchemy import func
 
 reviews_bp = Blueprint('reviews', __name__, url_prefix='/api/v1/reviews')
 
@@ -19,11 +18,11 @@ def create_notification_message(recipient_id, sender_id, message_type, related_i
     db.session.add(message)
 
 @reviews_bp.route('', methods=['POST'])
-@jwt_required()
 def create_review():
     """创建评价"""
     try:
-        current_user_id = get_jwt_identity()
+        # 使用固定的管理员用户ID
+        current_user_id = 1
         data = request.get_json()
         
         if not data:
@@ -118,7 +117,6 @@ def create_review():
         return error_response(f"提交评价失败: {str(e)}", 500)
 
 @reviews_bp.route('/<int:review_id>', methods=['GET'])
-@jwt_required()
 def get_review(review_id):
     """获取评价详情"""
     try:
@@ -136,7 +134,6 @@ def get_review(review_id):
         return error_response(f"获取评价详情失败: {str(e)}", 500)
 
 @reviews_bp.route('', methods=['GET'])
-@jwt_required()
 def get_reviews():
     """获取评价列表"""
     try:
@@ -146,7 +143,8 @@ def get_reviews():
         rating = request.args.get('rating', type=int)
         review_type = request.args.get('type')  # 'given' 或 'received'
         
-        current_user_id = get_jwt_identity()
+        # 使用固定的管理员用户ID
+        current_user_id = 1
         
         query = Review.query
         
@@ -157,22 +155,13 @@ def get_reviews():
                 query = query.filter(Review.reviewer_id == user_id)
             elif review_type == 'received':
                 # 该用户收到的评价
-                query = query.filter(Review.reviewed_user_id == user_id)
+                query = query.filter(Review.reviewee_id == user_id)
             else:
                 # 该用户相关的所有评价
                 query = query.filter(
-                    or_(Review.reviewer_id == user_id, Review.reviewed_user_id == user_id)
+                    or_(Review.reviewer_id == user_id, Review.reviewee_id == user_id)
                 )
-        else:
-            # 如果没有指定用户，默认显示当前用户相关的评价
-            if review_type == 'given':
-                query = query.filter(Review.reviewer_id == current_user_id)
-            elif review_type == 'received':
-                query = query.filter(Review.reviewed_user_id == current_user_id)
-            else:
-                query = query.filter(
-                    or_(Review.reviewer_id == current_user_id, Review.reviewed_user_id == current_user_id)
-                )
+        # 管理员可以查看所有评价，不做额外筛选
         
         # 评分筛选
         if rating and 1 <= rating <= 5:
@@ -182,8 +171,18 @@ def get_reviews():
         
         result = paginate_query(query, page, per_page)
         
+        # 转换数据格式
+        reviews_data = []
+        for review_data in result['items']:
+            review = Review.query.get(review_data['review_id'])
+            if review:
+                reviews_data.append(review.to_dict())
+        
         return success_response(
-            data=result,
+            data={
+                'reviews': reviews_data,
+                'pagination': result['pagination']
+            },
             message="获取评价列表成功"
         )
         
@@ -191,7 +190,6 @@ def get_reviews():
         return error_response(f"获取评价列表失败: {str(e)}", 500)
 
 @reviews_bp.route('/user/<int:user_id>/statistics', methods=['GET'])
-@jwt_required()
 def get_user_review_statistics(user_id):
     """获取用户评价统计"""
     try:
@@ -249,11 +247,11 @@ def get_user_review_statistics(user_id):
         return error_response(f"获取用户评价统计失败: {str(e)}", 500)
 
 @reviews_bp.route('/request/<int:request_id>', methods=['GET'])
-@jwt_required()
 def get_request_reviews(request_id):
     """获取特定请求的评价"""
     try:
-        current_user_id = get_jwt_identity()
+        # 使用固定的管理员用户ID
+        current_user_id = 1
         
         # 验证请求是否存在
         req = Request.query.get(request_id)
@@ -317,11 +315,11 @@ def get_request_reviews(request_id):
         return error_response(f"获取请求评价失败: {str(e)}", 500)
 
 @reviews_bp.route('/<int:review_id>', methods=['PUT'])
-@jwt_required()
 def update_review(review_id):
     """更新评价（仅限评价者在24小时内修改）"""
     try:
-        current_user_id = get_jwt_identity()
+        # 使用固定的管理员用户ID
+        current_user_id = 1
         review = Review.query.get(review_id)
         
         if not review:
@@ -371,11 +369,11 @@ def update_review(review_id):
         return error_response(f"更新评价失败: {str(e)}", 500)
 
 @reviews_bp.route('/<int:review_id>', methods=['DELETE'])
-@jwt_required()
 def delete_review(review_id):
     """删除评价（仅限管理员或评价者在1小时内删除）"""
     try:
-        current_user_id = get_jwt_identity()
+        # 使用固定的管理员用户ID
+        current_user_id = 1
         current_user = User.query.get(current_user_id)
         review = Review.query.get(review_id)
         

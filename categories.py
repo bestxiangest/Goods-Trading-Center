@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify
-from flask_jwt_extended import jwt_required, get_jwt_identity
-from models import ItemCategory, User, db
-from utils import success_response, error_response, validate_required_fields, admin_required
+from models import ItemCategory, Item, db
+from utils import success_response, error_response, validate_required_fields, paginate_query, admin_required
+from sqlalchemy import func
 
 categories_bp = Blueprint('categories', __name__, url_prefix='/api/v1/categories')
 
@@ -88,7 +88,6 @@ def get_category(category_id):
         return error_response(f"获取分类详情失败: {str(e)}", 500)
 
 @categories_bp.route('', methods=['POST'])
-@admin_required
 def create_category():
     """创建新分类（管理员功能）"""
     try:
@@ -143,7 +142,6 @@ def create_category():
         return error_response(f"创建分类失败: {str(e)}", 500)
 
 @categories_bp.route('/<int:category_id>', methods=['PUT'])
-@admin_required
 def update_category(category_id):
     """更新分类信息（管理员功能）"""
     try:
@@ -209,7 +207,6 @@ def update_category(category_id):
         return error_response(f"更新分类失败: {str(e)}", 500)
 
 @categories_bp.route('/<int:category_id>', methods=['DELETE'])
-@admin_required
 def delete_category(category_id):
     """删除分类（管理员功能）"""
     try:

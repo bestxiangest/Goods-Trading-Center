@@ -1,5 +1,4 @@
 from flask import Blueprint, request, jsonify
-from flask_jwt_extended import jwt_required, get_jwt_identity
 from models import Item, ItemImage, ItemCategory, User, db
 from utils import success_response, error_response, validate_required_fields, get_current_user, paginate_query, calculate_distance
 from sqlalchemy import or_, and_
@@ -7,11 +6,11 @@ from sqlalchemy import or_, and_
 items_bp = Blueprint('items', __name__, url_prefix='/api/v1/items')
 
 @items_bp.route('', methods=['POST'])
-@jwt_required()
 def create_item():
     """发布新物品"""
     try:
-        current_user_id = get_jwt_identity()
+        # 使用固定的管理员用户ID
+        current_user_id = 1
         data = request.get_json()
         
         if not data:
@@ -229,11 +228,11 @@ def get_items():
         return error_response(f"获取物品列表失败: {str(e)}", 500)
 
 @items_bp.route('/<int:item_id>', methods=['PUT'])
-@jwt_required()
 def update_item(item_id):
     """更新物品信息"""
     try:
-        current_user_id = get_jwt_identity()
+        # 使用固定的管理员用户ID
+        current_user_id = 1
         item = Item.query.get(item_id)
         
         if not item:
@@ -330,11 +329,11 @@ def update_item(item_id):
         return error_response(f"更新物品信息失败: {str(e)}", 500)
 
 @items_bp.route('/<int:item_id>', methods=['DELETE'])
-@jwt_required()
 def delete_item(item_id):
     """删除物品"""
     try:
-        current_user_id = get_jwt_identity()
+        # 使用固定的管理员用户ID
+        current_user_id = 1
         item = Item.query.get(item_id)
         
         if not item:
@@ -368,11 +367,11 @@ def delete_item(item_id):
         return error_response(f"删除物品失败: {str(e)}", 500)
 
 @items_bp.route('/my', methods=['GET'])
-@jwt_required()
 def get_my_items():
     """获取当前用户发布的物品"""
     try:
-        current_user_id = get_jwt_identity()
+        # 使用固定的管理员用户ID
+        current_user_id = 1
         page = request.args.get('page', 1, type=int)
         per_page = request.args.get('per_page', 20, type=int)
         status = request.args.get('status')

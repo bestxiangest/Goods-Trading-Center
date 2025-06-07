@@ -184,7 +184,7 @@
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        const API_BASE_URL = 'http://localhost:5000/api';
+        const API_BASE_URL = 'http://localhost:5000/api/v1';
         
         document.getElementById('loginForm').addEventListener('submit', function(e) {
             e.preventDefault();
@@ -202,7 +202,7 @@
             showLoading(true);
             
             // 发送登录请求
-            fetch(`${API_BASE_URL}/auth/login`, {
+            fetch(`${API_BASE_URL}/users/admin/login`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -219,9 +219,10 @@
                 return response.json();
             })
             .then(data => {
-                if (data.access_token && data.user && data.user.role === 'admin') {
-                    // 保存token
-                    localStorage.setItem('admin_token', data.access_token);
+                if (data.code === 200 && data.data && data.data.is_admin) {
+                    // 保存登录标记
+                    localStorage.setItem('admin_logged_in', 'true');
+                    localStorage.setItem('admin_username', data.data.username);
                     
                     if (rememberMe) {
                         localStorage.setItem('remember_admin', 'true');
@@ -234,7 +235,7 @@
                         window.location.href = '/admin';
                     }, 1000);
                 } else {
-                    throw new Error('权限不足，仅限管理员登录');
+                    throw new Error(data.message || '权限不足，仅限管理员登录');
                 }
             })
             .catch(error => {
@@ -284,7 +285,7 @@
             const token = localStorage.getItem('admin_token');
             if (token) {
                 // 验证token是否有效
-                fetch(`${API_BASE_URL}/auth/verify`, {
+                fetch(`${API_BASE_URL}/users/verify`, {
                     method: 'GET',
                     headers: {
                         'Authorization': `Bearer ${token}`,
