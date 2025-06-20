@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200">
+  <rect width="200" height="200" fill="#f8f9fa"/>
+  <rect x="40" y="30" width="120" height="140" fill="#6f42c1"/>
+  <rect x="45" y="35" width="110" height="130" fill="#5a2d91"/>
+  <text x="100" y="75" text-anchor="middle" font-family="Arial" font-size="14" fill="white" font-weight="bold">算法导论</text>
+  <text x="100" y="95" text-anchor="middle" font-family="Arial" font-size="12" fill="white">Algorithm</text>
+  <text x="100" y="115" text-anchor="middle" font-family="Arial" font-size="16" fill="white">{}</text>
+  <text x="100" y="135" text-anchor="middle" font-family="Arial" font-size="14" fill="white">O(n)</text>
+  <text x="100" y="190" text-anchor="middle" font-family="Arial" font-size="12" fill="#6c757d">算法教材</text>
+</svg>
