@@ -298,6 +298,9 @@ main {
 .category-item.child {
     margin-left: 2rem;
     border-left: 3px solid #4e73df;
+    background-color: #4e73df;
+    color: #fff;
+    border-color: #4e73df;
 }
 
 /* 图表容器 */

@@ -7,6 +7,12 @@ let pageSize = 10;
 // Chart.js 实例管理
 let userChart = null;
 let categoryChart = null;
+let transactionStatusChart = null;
+let categoryDistributionChart = null;
+let reputationChart = null;
+let conditionDistributionChart = null;
+let monthlyTransactionChart = null;
+let dailyActivityChart = null;
 
 // API基础URL
 const API_BASE_URL = 'http://localhost:5000/api/v1';
@@ -152,13 +158,20 @@ function apiRequest(url, options = {}) {
     return fetch(`${API_BASE_URL}${url}`, mergedOptions)
         .then(response => {
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                return response.json().then(errorData => {
+                    throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+                }).catch(() => {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                });
+            }
+            // 处理204 No Content响应
+            if (response.status === 204) {
+                return { success: true, message: '操作成功' };
             }
             return response.json();
         })
         .catch(error => {
             console.error('API request failed:', error);
-            showAlert('请求失败: ' + error.message, 'danger');
             throw error;
         });
 }
@@ -191,7 +204,7 @@ function loadDashboardData() {
         apiRequest('/users/count'),
         apiRequest('/items/count'),
         apiRequest('/requests/count?status=pending'),
-        apiRequest('/statistics/today')
+        apiRequest('/today')
     ])
     .then(([usersCount, itemsCount, pendingRequests, todayStats]) => {
         document.getElementById('total-users').textContent = usersCount.data.count || 0;
@@ -220,13 +233,16 @@ function loadDashboardCharts() {
     }
     
     // 用户注册趋势图
-    apiRequest('/statistics/user-registration-trend')
+    apiRequest('/user-registration-trend')
         .then(response => {
             const data = response.data || [];
             const labels = data.map(item => item.date);
             const values = data.map(item => item.count);
             
             const ctx = document.getElementById('userChart').getContext('2d');
+            if (userChart) {
+                userChart.destroy();
+            }
             userChart = new Chart(ctx, {
                 type: 'line',
                 data: {
@@ -255,13 +271,16 @@ function loadDashboardCharts() {
         });
     
     // 物品分类分布图
-    apiRequest('/statistics/item-category-distribution')
+    apiRequest('/item-category-distribution')
         .then(response => {
             const data = response.data || [];
             const labels = data.map(item => item.category);
             const values = data.map(item => item.count);
             
             const ctx = document.getElementById('categoryChart').getContext('2d');
+            if (categoryChart) {
+                categoryChart.destroy();
+            }
             categoryChart = new Chart(ctx, {
                 type: 'doughnut',
                 data: {
@@ -332,7 +351,7 @@ function displayUsers(users) {
     
     tbody.innerHTML = users.map(user => `
         <tr>
-            <td>${user.id}</td>
+            <td>${user.user_id}</td>
             <td>${user.username}</td>
             <td>${user.email}</td>
             <td>${user.phone || '-'}</td>
@@ -343,17 +362,17 @@ function displayUsers(users) {
                 </div>
             </td>
             <td>
-                <span class="badge ${user.role === 'admin' ? 'bg-danger' : 'bg-primary'}">
-                    ${user.role === 'admin' ? '管理员' : '普通用户'}
+                <span class="badge ${user.is_admin ? 'bg-danger' : 'bg-primary'}">
+                    ${user.is_admin ? '管理员' : '普通用户'}
                 </span>
             </td>
             <td>${formatDateTime(user.created_at)}</td>
             <td>
-                <button class="btn btn-sm btn-outline-primary" onclick="showUserDetail(${user.id})">
+                <button class="btn btn-sm btn-outline-primary" onclick="showUserDetail(${user.user_id})">
                     <i class="fas fa-eye"></i>
                 </button>
-                ${user.role !== 'admin' ? `
-                    <button class="btn btn-sm btn-outline-warning ms-1" onclick="toggleUserStatus(${user.id})">
+                ${!user.is_admin ? `
+                    <button class="btn btn-sm btn-outline-warning ms-1" onclick="toggleUserStatus(${user.user_id})">
                         <i class="fas fa-ban"></i>
                     </button>
                 ` : ''}
@@ -406,11 +425,11 @@ function displayItems(items) {
     
     tbody.innerHTML = items.map(item => `
         <tr>
-            <td>${item.id}</td>
+            <td>${item.item_id}</td>
             <td>
                 <div class="d-flex align-items-center">
                     ${item.images && item.images.length > 0 ? 
-                        `<img src="${item.images[0]}" alt="${item.title}" class="me-2" style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px;">` : 
+                        `<img src="${item.images[0].image_url}" alt="${item.title}" class="me-2" style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"><div class="me-2" style="width: 40px; height: 40px; background-color: #f8f9fc; border-radius: 4px; display: none; align-items: center; justify-content: center;"><i class="fas fa-image text-muted"></i></div>` : 
                         '<div class="me-2" style="width: 40px; height: 40px; background-color: #f8f9fc; border-radius: 4px; display: flex; align-items: center; justify-content: center;"><i class="fas fa-image text-muted"></i></div>'
                     }
                     <span>${item.title}</span>
@@ -426,10 +445,10 @@ function displayItems(items) {
             <td>${getConditionText(item.condition)}</td>
             <td>${formatDateTime(item.created_at)}</td>
             <td>
-                <button class="btn btn-sm btn-outline-primary" onclick="showItemDetail(${item.id})">
+                <button class="btn btn-sm btn-outline-primary" onclick="showItemDetail(${item.item_id})">
                     <i class="fas fa-eye"></i>
                 </button>
-                <button class="btn btn-sm btn-outline-danger ms-1" onclick="deleteItem(${item.id})">
+                <button class="btn btn-sm btn-outline-danger ms-1" onclick="deleteItem(${item.item_id})">
                     <i class="fas fa-trash"></i>
                 </button>
             </td>
@@ -439,7 +458,7 @@ function displayItems(items) {
 
 // 加载分类数据
 function loadCategories() {
-    apiRequest('/categories')
+    apiRequest('/categories/tree')
         .then(response => {
             const data = response.data || [];
             if (currentSection === 'categories') {
@@ -472,34 +491,11 @@ function displayCategories(categories) {
         return;
     }
     
-    // 构建分类树
-    const tree = buildCategoryTree(categories);
-    container.innerHTML = renderCategoryTree(tree);
+    // 直接渲染分类树（API已返回树结构）
+    container.innerHTML = renderCategoryTree(categories);
 }
 
-// 构建分类树结构
-function buildCategoryTree(categories) {
-    const tree = [];
-    const map = {};
-    
-    // 创建映射
-    categories.forEach(category => {
-        map[category.id] = { ...category, children: [] };
-    });
-    
-    // 构建树结构
-    categories.forEach(category => {
-        if (category.parent_id) {
-            if (map[category.parent_id]) {
-                map[category.parent_id].children.push(map[category.id]);
-            }
-        } else {
-            tree.push(map[category.id]);
-        }
-    });
-    
-    return tree;
-}
+
 
 // 渲染分类树
 function renderCategoryTree(tree) {
@@ -508,31 +504,31 @@ function renderCategoryTree(tree) {
             <div class="d-flex justify-content-between align-items-center">
                 <span>
                     <i class="fas fa-folder me-2"></i>
-                    ${category.name}
+                    ${category.name} <small class="text-muted">(${category.item_count || 0}个物品)</small>
                 </span>
                 <div>
-                    <button class="btn btn-sm btn-outline-light" onclick="editCategory(${category.id})">
+                    <button class="btn btn-sm btn-outline-light" onclick="editCategory(${category.category_id})">
                         <i class="fas fa-edit"></i>
                     </button>
-                    <button class="btn btn-sm btn-outline-light ms-1" onclick="deleteCategory(${category.id})">
+                    <button class="btn btn-sm btn-outline-light ms-1" onclick="deleteCategory(${category.category_id})">
                         <i class="fas fa-trash"></i>
                     </button>
                 </div>
             </div>
-            ${category.children.length > 0 ? `
+            ${category.children && category.children.length > 0 ? `
                 <div class="mt-2">
                     ${category.children.map(child => `
                         <div class="category-item child">
                             <div class="d-flex justify-content-between align-items-center">
                                 <span>
                                     <i class="fas fa-file me-2"></i>
-                                    ${child.name}
+                                    ${child.name} <small class="text-muted">(${child.item_count || 0}个物品)</small>
                                 </span>
                                 <div>
-                                    <button class="btn btn-sm btn-outline-primary" onclick="editCategory(${child.id})">
+                                    <button class="btn btn-sm btn-outline-primary" onclick="editCategory(${child.category_id})">
                                         <i class="fas fa-edit"></i>
                                     </button>
-                                    <button class="btn btn-sm btn-outline-danger ms-1" onclick="deleteCategory(${child.id})">
+                                    <button class="btn btn-sm btn-outline-danger ms-1" onclick="deleteCategory(${child.category_id})">
                                         <i class="fas fa-trash"></i>
                                     </button>
                                 </div>
@@ -550,18 +546,41 @@ function updateCategoryFilters(categories) {
     const itemCategoryFilter = document.getElementById('item-category-filter');
     const parentCategorySelect = document.getElementById('parentCategory');
     
+    // 扁平化分类数据
+    const flatCategories = flattenCategories(categories);
+    
     if (itemCategoryFilter) {
         const currentValue = itemCategoryFilter.value;
         itemCategoryFilter.innerHTML = '<option value="">全部分类</option>' +
-            categories.map(cat => `<option value="${cat.id}">${cat.name}</option>`).join('');
+            flatCategories.map(cat => `<option value="${cat.id}">${cat.name}</option>`).join('');
         itemCategoryFilter.value = currentValue;
     }
     
     if (parentCategorySelect) {
         parentCategorySelect.innerHTML = '<option value="">无（顶级分类）</option>' +
-            categories.filter(cat => !cat.parent_id)
-                .map(cat => `<option value="${cat.id}">${cat.name}</option>`).join('');
+            categories.map(cat => `<option value="${cat.id}">${cat.name}</option>`).join('');
     }
+}
+
+// 扁平化分类树
+function flattenCategories(categories) {
+    const result = [];
+    
+    function flatten(cats, prefix = '') {
+        cats.forEach(cat => {
+            result.push({
+                id: cat.category_id,
+                name: prefix + cat.name
+            });
+            
+            if (cat.children && cat.children.length > 0) {
+                flatten(cat.children, prefix + cat.name + ' > ');
+            }
+        });
+    }
+    
+    flatten(categories);
+    return result;
 }
 
 // 加载交易请求数据
@@ -574,7 +593,8 @@ function loadRequests(page = 1, statusFilter = '') {
     if (statusFilter) params.append('status', statusFilter);
     
     apiRequest(`/requests?${params}`)
-        .then(data => {
+        .then(response => {
+            const data = response.data || {};
             displayRequests(data.requests || []);
             updatePagination('requests', data.pagination || {});
         })
@@ -699,8 +719,9 @@ function loadMessages(page = 1, typeFilter = '', readFilter = '') {
     if (readFilter) params.append('is_read', readFilter);
     
     apiRequest(`/messages?${params}`)
-        .then(data => {
-            displayMessages(data.messages || []);
+        .then(response => {
+            const data = response.data || {};
+            displayMessages(data.items || []);
             updatePagination('messages', data.pagination || {});
         })
         .catch(error => {
@@ -730,9 +751,9 @@ function displayMessages(messages) {
     
     tbody.innerHTML = messages.map(message => `
         <tr>
-            <td>${message.id}</td>
+            <td>${message.message_id}</td>
             <td>${message.sender_username || '系统'}</td>
-            <td>${message.receiver_username || '-'}</td>
+            <td>${message.recipient_username || '-'}</td>
             <td>
                 <span class="badge bg-info">
                     ${getMessageTypeText(message.type)}
@@ -750,7 +771,7 @@ function displayMessages(messages) {
             </td>
             <td>${formatDateTime(message.created_at)}</td>
             <td>
-                <button class="btn btn-sm btn-outline-danger" onclick="deleteMessage(${message.id})">
+                <button class="btn btn-sm btn-outline-danger" onclick="deleteMessage(${message.message_id})">
                     <i class="fas fa-trash"></i>
                 </button>
             </td>
@@ -760,18 +781,56 @@ function displayMessages(messages) {
 
 // 加载统计数据
 function loadStatistics() {
-    // 加载各种统计图表
+    loadOverviewCards();
     loadTransactionStatusChart();
-    loadMonthlyActivityChart();
+    loadCategoryDistributionChart();
     loadReputationChart();
+    loadConditionDistributionChart();
+    loadDailyActivityChart();
+    loadMonthlyTransactionChart();
+}
+
+// 加载概览卡片数据
+function loadOverviewCards() {
+    // 加载总用户数
+    apiRequest('/users/count')
+        .then(data => {
+            document.getElementById('total-users').textContent = data.data.count;
+        })
+        .catch(error => console.error('Error loading user count:', error));
+    
+    // 加载总物品数
+    apiRequest('/items/count')
+        .then(data => {
+            document.getElementById('total-items').textContent = data.data.count;
+        })
+        .catch(error => console.error('Error loading item count:', error));
+    
+    // 加载总交易请求数
+    apiRequest('/requests/count')
+        .then(data => {
+            document.getElementById('total-requests').textContent = data.data.count;
+        })
+        .catch(error => console.error('Error loading request count:', error));
+    
+    // 加载总评价数
+    apiRequest('/reviews/count')
+        .then(data => {
+            document.getElementById('total-reviews').textContent = data.data.count;
+        })
+        .catch(error => console.error('Error loading review count:', error));
 }
 
 // 加载交易状态分布图
 function loadTransactionStatusChart() {
-    apiRequest('/statistics/request-status-distribution')
+    apiRequest('/request-status-distribution')
         .then(data => {
+            // 销毁已存在的图表
+            if (transactionStatusChart) {
+                transactionStatusChart.destroy();
+            }
             const ctx = document.getElementById('transactionStatusChart').getContext('2d');
-            new Chart(ctx, {
+            transactionStatusChart = new Chart(ctx, {
                 type: 'pie',
                 data: {
                     labels: data.labels || [],
@@ -797,61 +856,197 @@ function loadTransactionStatusChart() {
         });
 }
 
-// 加载月度活跃度图
-function loadMonthlyActivityChart() {
-    // 暂时使用用户注册趋势数据
-    apiRequest('/statistics/user-registration-trend')
+// 加载物品分类分布图表
+function loadCategoryDistributionChart() {
+    apiRequest('/item-category-distribution')
         .then(data => {
-            const ctx = document.getElementById('monthlyActivityChart').getContext('2d');
-            new Chart(ctx, {
-                type: 'bar',
+            // 销毁已存在的图表
+            if (categoryDistributionChart) {
+                categoryDistributionChart.destroy();
+            }
+            const ctx = document.getElementById('categoryDistributionChart').getContext('2d');
+            categoryDistributionChart = new Chart(ctx, {
+                type: 'doughnut',
                 data: {
-                    labels: data.labels || [],
+                    labels: data.data.categories,
                     datasets: [{
-                        label: '新注册用户数',
-                        data: data.values || [],
-                        backgroundColor: '#4e73df',
-                        borderColor: '#4e73df',
-                        borderWidth: 1
+                        data: data.data.counts,
+                        backgroundColor: [
+                            '#FF6384',
+                            '#36A2EB',
+                            '#FFCE56',
+                            '#4BC0C0',
+                            '#9966FF',
+                            '#FF9F40',
+                            '#FF6384',
+                            '#C9CBCF'
+                        ]
                     }]
                 },
                 options: {
                     responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: {
-                            beginAtZero: true
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: '物品分类分布'
+                        },
+                        legend: {
+                            position: 'bottom'
                         }
                     }
                 }
             });
         })
-        .catch(error => {
-            console.error('Failed to load monthly activity chart:', error);
-        });
+        .catch(error => console.error('Error loading category distribution chart:', error));
 }
 
-// 加载用户信誉分布图
+// 加载信誉分布图表
 function loadReputationChart() {
-    // 暂时使用分类分布数据
-    apiRequest('/statistics/item-category-distribution')
+    apiRequest('/user-reputation-distribution')
         .then(data => {
+            // 销毁已存在的图表
+            if (reputationChart) {
+                reputationChart.destroy();
+            }
             const ctx = document.getElementById('reputationChart').getContext('2d');
-            new Chart(ctx, {
-                type: 'histogram',
+            reputationChart = new Chart(ctx, {
+                type: 'bar',
                 data: {
-                    labels: data.labels || [],
+                    labels: data.data.ranges,
                     datasets: [{
                         label: '用户数量',
-                        data: data.values || [],
-                        backgroundColor: '#1cc88a',
-                        borderColor: '#1cc88a',
+                        data: data.data.counts,
+                        backgroundColor: [
+                            '#FF6B6B',  // 0-20: 红色
+                            '#FFA726',  // 21-40: 橙色
+                            '#FFEB3B',  // 41-60: 黄色
+                            '#66BB6A',  // 61-80: 浅绿色
+                            '#4CAF50'   // 81-100: 深绿色
+                        ],
+                        borderColor: [
+                            '#FF5252',
+                            '#FF9800',
+                            '#FDD835',
+                            '#4CAF50',
+                            '#388E3C'
+                        ],
                         borderWidth: 1
                     }]
                 },
                 options: {
                     responsive: true,
-                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: '用户信誉分布'
+                        },
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: '用户数量'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: '信誉分数范围'
+                            }
+                        }
+                    }
+                }
+            });
+        })
+        .catch(error => console.error('Error loading reputation chart:', error));
+}
+
+// 加载物品新旧程度分布图表
+function loadConditionDistributionChart() {
+    apiRequest('/item-condition-distribution')
+        .then(data => {
+            // 销毁已存在的图表
+            if (conditionDistributionChart) {
+                conditionDistributionChart.destroy();
+            }
+            const ctx = document.getElementById('conditionDistributionChart').getContext('2d');
+            conditionDistributionChart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: data.data.conditions,
+                    datasets: [{
+                        data: data.data.counts,
+                        backgroundColor: [
+                            '#4CAF50',  // 全新
+                            '#8BC34A',  // 几乎全新
+                            '#FFEB3B',  // 良好
+                            '#FF9800',  // 一般
+                            '#F44336'   // 较差
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: '物品新旧程度分布'
+                        },
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        })
+        .catch(error => console.error('Error loading condition distribution chart:', error));
+}
+
+// 加载每日活跃度趋势图表
+function loadDailyActivityChart() {
+    apiRequest('/daily-activity')
+        .then(data => {
+            // 销毁已存在的图表
+            if (dailyActivityChart) {
+                dailyActivityChart.destroy();
+            }
+            const ctx = document.getElementById('dailyActivityChart').getContext('2d');
+            dailyActivityChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.data.dates,
+                    datasets: [{
+                        label: '新用户',
+                        data: data.data.new_users,
+                        borderColor: '#36A2EB',
+                        backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                        tension: 0.1
+                    }, {
+                        label: '新物品',
+                        data: data.data.new_items,
+                        borderColor: '#4BC0C0',
+                        backgroundColor: 'rgba(75, 192, 192, 0.1)',
+                        tension: 0.1
+                    }, {
+                        label: '新请求',
+                        data: data.data.new_requests,
+                        borderColor: '#FFCE56',
+                        backgroundColor: 'rgba(255, 206, 86, 0.1)',
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: '最近7天每日活跃度趋势'
+                        }
+                    },
                     scales: {
                         y: {
                             beginAtZero: true
@@ -860,9 +1055,59 @@ function loadReputationChart() {
                 }
             });
         })
-        .catch(error => {
-            console.error('Failed to load reputation chart:', error);
-        });
+        .catch(error => console.error('Error loading daily activity chart:', error));
+}
+
+// 加载月度交易趋势图表
+function loadMonthlyTransactionChart() {
+    apiRequest('/monthly-transaction-trend')
+        .then(data => {
+            // 销毁已存在的图表
+            if (monthlyTransactionChart) {
+                monthlyTransactionChart.destroy();
+            }
+            const ctx = document.getElementById('monthlyTransactionChart').getContext('2d');
+            monthlyTransactionChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.data.months,
+                    datasets: [{
+                        label: '已完成交易',
+                        data: data.data.completed,
+                        borderColor: '#4CAF50',
+                        backgroundColor: 'rgba(76, 175, 80, 0.1)',
+                        tension: 0.1
+                    }, {
+                        label: '进行中交易',
+                        data: data.data.pending,
+                        borderColor: '#FF9800',
+                        backgroundColor: 'rgba(255, 152, 0, 0.1)',
+                        tension: 0.1
+                    }, {
+                        label: '已取消交易',
+                        data: data.data.cancelled,
+                        borderColor: '#F44336',
+                        backgroundColor: 'rgba(244, 67, 54, 0.1)',
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: '最近6个月交易趋势'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        })
+        .catch(error => console.error('Error loading monthly transaction chart:', error));
 }
 
 // 更新分页
@@ -1102,7 +1347,7 @@ function showUserDetail(userId) {
                         <p><strong>邮箱:</strong> ${user.email}</p>
                         <p><strong>手机号:</strong> ${user.phone || '-'}</p>
                         <p><strong>地址:</strong> ${user.address || '-'}</p>
-                        <p><strong>角色:</strong> ${user.role === 'admin' ? '管理员' : '普通用户'}</p>
+                        <p><strong>角色:</strong> ${user.is_admin ? '管理员' : '普通用户'}</p>
                     </div>
                     <div class="col-md-6">
                         <h6>统计信息</h6>
@@ -1154,7 +1399,7 @@ function showItemDetail(itemId) {
                                 <strong>图片:</strong>
                                 <div class="mt-2">
                                     ${item.images.map(img => `
-                                        <img src="${img}" alt="物品图片" class="me-2 mb-2" style="width: 80px; height: 80px; object-fit: cover; border-radius: 4px;">
+                                        <img src="${img.image_url}" alt="物品图片" class="me-2 mb-2" style="width: 80px; height: 80px; object-fit: cover; border-radius: 4px;" onerror="this.style.display='none';">
                                     `).join('')}
                                 </div>
                             </div>
@@ -1208,6 +1453,11 @@ function deleteItem(itemId) {
         })
         .catch(error => {
             console.error('Failed to delete item:', error);
+            let errorMessage = '删除物品失败';
+            if (error.message && error.message.includes('400')) {
+                errorMessage = '该物品还有待处理的请求，无法删除';
+            }
+            showAlert(errorMessage, 'danger');
         });
     }
 }
@@ -1275,6 +1525,7 @@ function addCategory() {
     })
     .catch(error => {
         console.error('Failed to add category:', error);
+        showAlert('添加分类失败', 'danger');
     });
 }
 
@@ -1291,6 +1542,7 @@ function editCategory(categoryId) {
         })
         .catch(error => {
             console.error('Failed to update category:', error);
+            showAlert('更新分类失败', 'danger');
         });
     }
 }
@@ -1306,6 +1558,201 @@ function deleteCategory(categoryId) {
         })
         .catch(error => {
             console.error('Failed to delete category:', error);
+            let errorMessage = '删除分类失败';
+            if (error.message && error.message.includes('该分类下还有子分类')) {
+                errorMessage = '该分类下还有子分类，无法删除';
+            } else if (error.message && error.message.includes('该分类下还有物品')) {
+                errorMessage = '该分类下还有物品，无法删除';
+            }
+            showAlert(errorMessage, 'danger');
         });
+    }
+}
+
+// 显示添加用户模态框
+function showAddUserModal() {
+    const modal = new bootstrap.Modal(document.getElementById('addUserModal'));
+    modal.show();
+}
+
+// 添加用户
+function addUser() {
+    const username = document.getElementById('userUsername').value.trim();
+    const email = document.getElementById('userEmail').value.trim();
+    const password = document.getElementById('userPassword').value;
+    const phone = document.getElementById('userPhone').value.trim();
+    const address = document.getElementById('userAddress').value.trim();
+    const isAdmin = document.getElementById('userIsAdmin').checked;
+    
+    // 验证必填字段
+    if (!username || !email || !password || !address) {
+        showAlert('请填写所有必填字段', 'warning');
+        return;
+    }
+    
+    // 验证邮箱格式
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        showAlert('请输入有效的邮箱地址', 'warning');
+        return;
+    }
+    
+    // 验证密码长度
+    if (password.length < 6) {
+        showAlert('密码长度至少6位', 'warning');
+        return;
+    }
+    
+    const userData = {
+        username: username,
+        email: email,
+        password: password,
+        address: address
+    };
+    
+    if (phone) {
+        userData.phone = phone;
+    }
+    
+    if (isAdmin) {
+        userData.is_admin = true;
+    }
+    
+    apiRequest('/users/register', {
+        method: 'POST',
+        body: JSON.stringify(userData)
+    })
+    .then(() => {
+        showAlert('用户添加成功', 'success');
+        const modal = bootstrap.Modal.getInstance(document.getElementById('addUserModal'));
+        modal.hide();
+        document.getElementById('addUserForm').reset();
+        refreshUsers();
+    })
+    .catch(error => {
+        console.error('Failed to add user:', error);
+        showAlert(error.message || '添加用户失败', 'danger');
+    });
+}
+
+// 显示添加物品模态框
+function showAddItemModal() {
+    // 加载分类和用户选项
+    loadCategoriesForSelect();
+    loadUsersForSelect();
+    
+    const modal = new bootstrap.Modal(document.getElementById('addItemModal'));
+    modal.show();
+}
+
+// 为选择框加载分类
+function loadCategoriesForSelect() {
+    apiRequest('/categories/tree')
+        .then(response => {
+            const categories = response.data || [];
+            const select = document.getElementById('itemCategory');
+            const flatCategories = flattenCategories(categories);
+            
+            select.innerHTML = '<option value="">请选择分类</option>' +
+                flatCategories.map(cat => `<option value="${cat.id}">${cat.name}</option>`).join('');
+        })
+        .catch(error => {
+            console.error('Failed to load categories for select:', error);
+        });
+}
+
+// 为选择框加载用户
+function loadUsersForSelect() {
+    apiRequest('/users?per_page=1000')
+        .then(response => {
+            const users = response.data?.items || [];
+            const select = document.getElementById('itemOwner');
+            
+            select.innerHTML = '<option value="">请选择所有者</option>' +
+                users.map(user => `<option value="${user.user_id}">${user.username} (${user.email})</option>`).join('');
+        })
+        .catch(error => {
+            console.error('Failed to load users for select:', error);
+        });
+}
+
+// 添加物品
+async function addItem() {
+    const title = document.getElementById('itemTitle').value.trim();
+    const price = parseFloat(document.getElementById('itemPrice').value);
+    const categoryId = parseInt(document.getElementById('itemCategory').value);
+    const condition = document.getElementById('itemCondition').value;
+    const description = document.getElementById('itemDescription').value.trim();
+    const ownerId = parseInt(document.getElementById('itemOwner').value);
+    const images = document.getElementById('itemImages').files;
+    
+    // 验证必填字段
+    if (!title || !price || !categoryId || !condition || !description || !ownerId) {
+        showAlert('请填写所有必填字段', 'warning');
+        return;
+    }
+    
+    if (price <= 0) {
+        showAlert('价格必须大于0', 'warning');
+        return;
+    }
+    
+    if (images.length === 0) {
+        showAlert('请至少上传一张图片', 'warning');
+        return;
+    }
+    
+    try {
+        // 先上传图片
+        const imageUrls = [];
+        for (let i = 0; i < images.length; i++) {
+            const formData = new FormData();
+            formData.append('image', images[i]);
+            
+            const uploadResponse = await fetch(`${API_BASE_URL}/upload/image`, {
+                method: 'POST',
+                body: formData
+            });
+            
+            if (!uploadResponse.ok) {
+                const errorData = await uploadResponse.json();
+                throw new Error(errorData.message || '图片上传失败');
+            }
+            
+            const uploadResult = await uploadResponse.json();
+            imageUrls.push(uploadResult.data.image_url);
+        }
+        
+        // 创建物品
+        const itemData = {
+            title: title,
+            description: description,
+            category_id: categoryId,
+            condition: condition,
+            image_urls: imageUrls
+        };
+        
+        const response = await fetch(`${API_BASE_URL}/items`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(itemData)
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+        }
+        
+        showAlert('物品添加成功', 'success');
+        const modal = bootstrap.Modal.getInstance(document.getElementById('addItemModal'));
+        modal.hide();
+        document.getElementById('addItemForm').reset();
+        refreshItems();
+        
+    } catch (error) {
+        console.error('Failed to add item:', error);
+        showAlert(error.message || '添加物品失败', 'danger');
     }
 }

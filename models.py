@@ -211,6 +211,7 @@ class Message(db.Model):
             'recipient_id': self.recipient_id,
             'sender_id': self.sender_id,
             'sender_username': self.sender.username if self.sender else 'System',
+            'recipient_username': self.recipient.username if self.recipient else '-',
             'type': self.type,
             'related_id': self.related_id,
             'content': self.content,

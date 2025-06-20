@@ -248,9 +248,22 @@ def get_user_info(user_id):
         current_user = get_current_user()
         include_sensitive = current_user and (current_user.user_id == user_id or current_user.is_admin)
         
-        # 添加用户发布的物品数量
+        # 添加用户统计信息
         user_data = user.to_dict(include_sensitive=include_sensitive)
-        user_data['item_count'] = user.items.filter_by(status='available').count()
+        
+        # 发布物品数量
+        user_data['items_count'] = user.items.count()
+        
+        # 交易次数（已完成的请求数量）
+        from models import Request
+        completed_requests = Request.query.filter(
+            ((Request.requester_id == user_id) | (Request.item.has(user_id=user_id))) &
+            (Request.status == 'completed')
+        ).count()
+        user_data['transactions_count'] = completed_requests
+        
+        # 最后登录时间（暂时使用注册时间，因为没有last_login字段）
+        user_data['last_login'] = user.created_at.isoformat() if user.created_at else None
         
         return success_response(
             data=user_data,
@@ -299,14 +312,28 @@ def get_all_users():
                     user_data = user.to_dict(include_sensitive=True)
                     # 安全地获取关联数据计数
                     try:
-                        user_data['item_count'] = user.items.count()
+                        user_data['items_count'] = user.items.count()
                     except Exception:
-                        user_data['item_count'] = 0
+                        user_data['items_count'] = 0
                     
                     try:
-                        user_data['request_count'] = user.requests.count()
+                        user_data['requests_count'] = user.requests.count()
                     except Exception:
-                        user_data['request_count'] = 0
+                        user_data['requests_count'] = 0
+                    
+                    # 添加交易次数统计
+                    try:
+                        from models import Request
+                        completed_requests = Request.query.filter(
+                            ((Request.requester_id == user.user_id) | (Request.item.has(user_id=user.user_id))) &
+                            (Request.status == 'completed')
+                        ).count()
+                        user_data['transactions_count'] = completed_requests
+                    except Exception:
+                        user_data['transactions_count'] = 0
+                    
+                    # 添加最后登录时间
+                    user_data['last_login'] = user.created_at.isoformat() if user.created_at else None
                     
                     user_list.append(user_data)
                 except Exception as e:

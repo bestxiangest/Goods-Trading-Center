@@ -194,7 +194,10 @@
                     <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
                         <h1 class="h2">用户管理</h1>
                         <div class="btn-toolbar mb-2 mb-md-0">
-                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="refreshUsers()">
+                            <button type="button" class="btn btn-sm btn-primary" onclick="showAddUserModal()">
+                                <i class="fas fa-plus me-1"></i>添加用户
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary ms-2" onclick="refreshUsers()">
                                 <i class="fas fa-refresh me-1"></i>刷新
                             </button>
                         </div>
@@ -248,7 +251,10 @@
                     <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
                         <h1 class="h2">物品管理</h1>
                         <div class="btn-toolbar mb-2 mb-md-0">
-                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="refreshItems()">
+                            <button type="button" class="btn btn-sm btn-primary" onclick="showAddItemModal()">
+                                <i class="fas fa-plus me-1"></i>添加物品
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary ms-2" onclick="refreshItems()">
                                 <i class="fas fa-refresh me-1"></i>刷新
                             </button>
                         </div>
@@ -505,6 +511,73 @@
                         </div>
                     </div>
                     
+                    <!-- 统计概览卡片 -->
+                    <div class="row mb-4">
+                        <div class="col-xl-3 col-md-6 mb-4">
+                            <div class="card border-left-primary shadow h-100 py-2">
+                                <div class="card-body">
+                                    <div class="row no-gutters align-items-center">
+                                        <div class="col mr-2">
+                                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">总用户数</div>
+                                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="total-users">0</div>
+                                        </div>
+                                        <div class="col-auto">
+                                            <i class="fas fa-users fa-2x text-gray-300"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-xl-3 col-md-6 mb-4">
+                            <div class="card border-left-success shadow h-100 py-2">
+                                <div class="card-body">
+                                    <div class="row no-gutters align-items-center">
+                                        <div class="col mr-2">
+                                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">总物品数</div>
+                                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="total-items">0</div>
+                                        </div>
+                                        <div class="col-auto">
+                                            <i class="fas fa-box fa-2x text-gray-300"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-xl-3 col-md-6 mb-4">
+                            <div class="card border-left-info shadow h-100 py-2">
+                                <div class="card-body">
+                                    <div class="row no-gutters align-items-center">
+                                        <div class="col mr-2">
+                                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">总交易请求</div>
+                                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="total-requests">0</div>
+                                        </div>
+                                        <div class="col-auto">
+                                            <i class="fas fa-handshake fa-2x text-gray-300"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-xl-3 col-md-6 mb-4">
+                            <div class="card border-left-warning shadow h-100 py-2">
+                                <div class="card-body">
+                                    <div class="row no-gutters align-items-center">
+                                        <div class="col mr-2">
+                                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">总评价数</div>
+                                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="total-reviews">0</div>
+                                        </div>
+                                        <div class="col-auto">
+                                            <i class="fas fa-star fa-2x text-gray-300"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
                     <!-- 统计图表 -->
                     <div class="row">
                         <div class="col-lg-6 mb-4">
@@ -521,23 +594,58 @@
                         <div class="col-lg-6 mb-4">
                             <div class="card shadow">
                                 <div class="card-header py-3">
-                                    <h6 class="m-0 font-weight-bold text-primary">月度活跃度</h6>
+                                    <h6 class="m-0 font-weight-bold text-primary">物品分类分布</h6>
                                 </div>
                                 <div class="card-body">
-                                    <canvas id="monthlyActivityChart"></canvas>
+                                    <canvas id="categoryDistributionChart"></canvas>
                                 </div>
                             </div>
                         </div>
                     </div>
                     
                     <div class="row">
-                        <div class="col-lg-12">
+                        <div class="col-lg-6 mb-4">
                             <div class="card shadow">
                                 <div class="card-header py-3">
                                     <h6 class="m-0 font-weight-bold text-primary">用户信誉分布</h6>
                                 </div>
                                 <div class="card-body">
                                     <canvas id="reputationChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-lg-6 mb-4">
+                            <div class="card shadow">
+                                <div class="card-header py-3">
+                                    <h6 class="m-0 font-weight-bold text-primary">物品新旧程度分布</h6>
+                                </div>
+                                <div class="card-body">
+                                    <canvas id="conditionDistributionChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-lg-6 mb-4">
+                            <div class="card shadow">
+                                <div class="card-header py-3">
+                                    <h6 class="m-0 font-weight-bold text-primary">每日活跃度趋势</h6>
+                                </div>
+                                <div class="card-body">
+                                    <canvas id="dailyActivityChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-lg-6 mb-4">
+                            <div class="card shadow">
+                                <div class="card-header py-3">
+                                    <h6 class="m-0 font-weight-bold text-primary">月度交易趋势</h6>
+                                </div>
+                                <div class="card-body">
+                                    <canvas id="monthlyTransactionChart"></canvas>
                                 </div>
                             </div>
                         </div>
@@ -604,6 +712,128 @@
                 </div>
                 <div class="modal-body" id="itemDetailContent">
                     <!-- 物品详情内容将通过JavaScript加载 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 添加用户模态框 -->
+    <div class="modal fade" id="addUserModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">添加用户</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="addUserForm">
+                        <div class="mb-3">
+                            <label for="userUsername" class="form-label">用户名 *</label>
+                            <input type="text" class="form-control" id="userUsername" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="userEmail" class="form-label">邮箱 *</label>
+                            <input type="email" class="form-control" id="userEmail" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="userPassword" class="form-label">密码 *</label>
+                            <input type="password" class="form-control" id="userPassword" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="userPhone" class="form-label">手机号</label>
+                            <input type="tel" class="form-control" id="userPhone">
+                        </div>
+                        <div class="mb-3">
+                            <label for="userAddress" class="form-label">地址 *</label>
+                            <textarea class="form-control" id="userAddress" rows="3" required></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="userIsAdmin">
+                                <label class="form-check-label" for="userIsAdmin">
+                                    设为管理员
+                                </label>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" onclick="addUser()">添加</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 添加物品模态框 -->
+    <div class="modal fade" id="addItemModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">添加物品</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="addItemForm">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="itemTitle" class="form-label">物品标题 *</label>
+                                    <input type="text" class="form-control" id="itemTitle" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="itemPrice" class="form-label">价格 *</label>
+                                    <input type="number" class="form-control" id="itemPrice" step="0.01" min="0" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="itemCategory" class="form-label">分类 *</label>
+                                    <select class="form-select" id="itemCategory" required>
+                                        <option value="">请选择分类</option>
+                                        <!-- 分类选项将通过JavaScript加载 -->
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="itemCondition" class="form-label">新旧程度 *</label>
+                                    <select class="form-select" id="itemCondition" required>
+                                        <option value="">请选择新旧程度</option>
+                                        <option value="new">全新</option>
+                                        <option value="like_new">几乎全新</option>
+                                        <option value="good">良好</option>
+                                        <option value="fair">一般</option>
+                                        <option value="poor">较差</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="itemDescription" class="form-label">物品描述 *</label>
+                            <textarea class="form-control" id="itemDescription" rows="4" required></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="itemOwner" class="form-label">物品所有者 *</label>
+                            <select class="form-select" id="itemOwner" required>
+                                <option value="">请选择所有者</option>
+                                <!-- 用户选项将通过JavaScript加载 -->
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="itemImages" class="form-label">物品图片</label>
+                            <input type="file" class="form-control" id="itemImages" multiple accept="image/*">
+                            <div class="form-text">可选择多张图片，支持jpg、png格式</div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" onclick="addItem()">添加</button>
                 </div>
             </div>
         </div>

@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, render_template, redirect
+from flask import Flask, render_template, redirect, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
 from flask_jwt_extended import JWTManager
 from flask_cors import CORS
@@ -86,6 +86,35 @@ def create_app(config_class=DevelopmentConfig):
             'version': '1.0.0'
         })
     
+    # 图片上传端点
+    @app.route('/api/v1/upload/image', methods=['POST'])
+    def upload_image():
+        """上传图片"""
+        try:
+            if 'image' not in request.files:
+                return error_response("没有选择文件")
+            
+            file = request.files['image']
+            if file.filename == '':
+                return error_response("没有选择文件")
+            
+            from utils import save_uploaded_file
+            image_url = save_uploaded_file(file, 'items')
+            
+            if image_url:
+                return jsonify({
+                    'success': True,
+                    'message': '图片上传成功',
+                    'data': {
+                        'image_url': image_url
+                    }
+                })
+            else:
+                return error_response("文件格式不支持")
+                
+        except Exception as e:
+            return error_response(f"上传失败: {str(e)}")
+    
     # API根端点
     @app.route('/api/v1', methods=['GET'])
     def api_info():
@@ -99,7 +128,8 @@ def create_app(config_class=DevelopmentConfig):
                 'categories': '/api/v1/categories',
                 'requests': '/api/v1/requests',
                 'reviews': '/api/v1/reviews',
-                'messages': '/api/v1/messages'
+                'messages': '/api/v1/messages',
+                'upload': '/api/v1/upload/image'
             }
         })
     

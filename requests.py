@@ -141,55 +141,75 @@ def get_requests():
         status = request.args.get('status')
         request_type = request.args.get('type')  # 'sent' 或 'received'
         
-        # 联接相关表以获取完整信息
-        query = Request.query.join(Item).join(User, Request.requester_id == User.user_id)
-        
-        # 根据类型筛选
-        if request_type == 'sent':
-            # 我发送的请求
-            query = query.filter(Request.requester_id == current_user_id)
-        elif request_type == 'received':
-            # 我收到的请求
-            query = query.filter(Item.user_id == current_user_id)
-        # 管理员可以查看所有请求，不做额外筛选
-        
-        # 状态筛选
-        if status:
-            query = query.filter(Request.status == status)
-        
-        query = query.order_by(Request.created_at.desc())
-        
-        # 直接获取Request对象而不是使用paginate_query
-        pagination = query.paginate(
-            page=page,
-            per_page=per_page,
-            error_out=False
-        )
-        
-        # 转换数据格式，添加物品所有者信息
-        requests_data = []
-        for req in pagination.items:
-            req_dict = req.to_dict()
-            # 添加物品所有者用户名
-            req_dict['owner_username'] = req.item.user.username if req.item and req.item.user else None
-            requests_data.append(req_dict)
-        
-        return success_response(
-            data={
+        # 手动分页处理，避免使用可能有问题的paginate方法
+        try:
+            page = max(1, page)
+            per_page = min(max(1, per_page), 100)
+            
+            # 构建查询
+            query = Request.query
+            
+            # 根据类型筛选
+            if request_type == 'sent':
+                # 我发送的请求
+                query = query.filter(Request.requester_id == current_user_id)
+            elif request_type == 'received':
+                # 我收到的请求 - 需要join Item表
+                query = query.join(Item).filter(Item.user_id == current_user_id)
+            # 管理员可以查看所有请求，不做额外筛选
+            
+            # 状态筛选
+            if status:
+                query = query.filter(Request.status == status)
+            
+            query = query.order_by(Request.created_at.desc())
+            
+            # 手动分页
+            total = query.count()
+            requests = query.offset((page - 1) * per_page).limit(per_page).all()
+            
+            # 转换数据格式，添加物品所有者信息
+            requests_data = []
+            for req in requests:
+                try:
+                    req_dict = req.to_dict()
+                    # 安全地添加物品所有者用户名
+                    try:
+                        req_dict['owner_username'] = req.item.owner.username if req.item and req.item.owner else None
+                    except Exception:
+                        req_dict['owner_username'] = None
+                    requests_data.append(req_dict)
+                except Exception as e:
+                    # 如果单个请求数据转换失败，跳过该请求
+                    print(f"转换请求数据失败 (request_id: {req.request_id}): {str(e)}")
+                    continue
+            
+            # 计算分页信息
+            pages = (total + per_page - 1) // per_page
+            
+            result = {
                 'requests': requests_data,
                 'pagination': {
-                    'page': pagination.page,
-                    'per_page': pagination.per_page,
-                    'total': pagination.total,
-                    'pages': pagination.pages,
-                    'has_prev': pagination.has_prev,
-                    'has_next': pagination.has_next
+                    'page': page,
+                    'per_page': per_page,
+                    'total': total,
+                    'pages': pages,
+                    'has_prev': page > 1,
+                    'has_next': page < pages
                 }
-            },
-            message="获取请求列表成功"
-        )
+            }
+            
+            return success_response(
+                data=result,
+                message="获取请求列表成功"
+            )
+            
+        except Exception as db_error:
+            print(f"数据库查询错误: {str(db_error)}")
+            return error_response(f"数据库查询失败: {str(db_error)}", 500)
         
     except Exception as e:
+        print(f"获取请求列表失败: {str(e)}")
         return error_response(f"获取请求列表失败: {str(e)}", 500)
 
 @requests_bp.route('/<int:request_id>/status', methods=['PUT'])
