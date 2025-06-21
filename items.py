@@ -392,3 +392,51 @@ def get_my_items():
         
     except Exception as e:
         return error_response(f"获取我的物品失败: {str(e)}", 500)
+
+@items_bp.route('/images/<int:image_id>', methods=['DELETE'])
+def delete_item_image(image_id):
+    """删除物品图片"""
+    try:
+        # 使用固定的管理员用户ID
+        current_user_id = 1
+        image = ItemImage.query.get(image_id)
+        
+        if not image:
+            return error_response("图片不存在", 404)
+        
+        # 获取物品信息
+        item = Item.query.get(image.item_id)
+        if not item:
+            return error_response("物品不存在", 404)
+        
+        # 检查权限（只有物品所有者或管理员可以删除）
+        current_user = User.query.get(current_user_id)
+        if item.user_id != current_user_id and not current_user.is_admin:
+            return error_response("无权限删除此图片", 403)
+        
+        # 检查是否是最后一张图片
+        image_count = ItemImage.query.filter_by(item_id=item.item_id).count()
+        if image_count <= 1:
+            return error_response("至少需要保留一张图片", 400)
+        
+        # 如果删除的是主图，需要设置新的主图
+        if image.is_primary:
+            # 找到下一张图片设为主图
+            next_image = ItemImage.query.filter(
+                ItemImage.item_id == item.item_id,
+                ItemImage.image_id != image_id
+            ).first()
+            if next_image:
+                next_image.is_primary = True
+        
+        db.session.delete(image)
+        db.session.commit()
+        
+        return success_response(
+            message="图片删除成功",
+            code=204
+        )
+        
+    except Exception as e:
+        db.session.rollback()
+        return error_response(f"删除图片失败: {str(e)}", 500)

@@ -17,6 +17,7 @@ from reviews import reviews_bp
 from messages import messages_bp
 from statistics import statistics_bp
 
+
 def create_app(config_class=DevelopmentConfig):
     """应用工厂函数"""
     app = Flask(__name__)
@@ -34,13 +35,14 @@ def create_app(config_class=DevelopmentConfig):
         os.makedirs(upload_folder)
     
     # 注册蓝图
-    app.register_blueprint(auth_bp)
-    app.register_blueprint(items_bp)
-    app.register_blueprint(categories_bp)
-    app.register_blueprint(requests_bp)
-    app.register_blueprint(reviews_bp)
-    app.register_blueprint(messages_bp)
-    app.register_blueprint(statistics_bp)
+    app.register_blueprint(auth_bp)          # 用户认证相关API
+    app.register_blueprint(items_bp)         # 物品管理API
+    app.register_blueprint(categories_bp)    # 分类管理API
+    app.register_blueprint(requests_bp)      # 交易请求API
+    app.register_blueprint(reviews_bp)       # 评价管理API
+    app.register_blueprint(messages_bp)      # 消息管理API
+    app.register_blueprint(statistics_bp)    # 统计数据API
+
     
     # JWT错误处理
     @jwt.expired_token_loader
@@ -161,22 +163,30 @@ if __name__ == '__main__':
         print("数据库表创建完成")
         
         # 创建默认管理员用户（如果不存在）
-        from models import User
-        admin_user = User.query.filter_by(email='admin@example.com').first()
-        if not admin_user:
-            admin_user = User(
-                username='admin',
-                email='admin@example.com',
-                phone='13800000000',
-                address='管理员地址',
-                is_admin=True
-            )
-            admin_user.set_password('admin123')
-            db.session.add(admin_user)
-            db.session.commit()
-            print("默认管理员用户创建完成")
-            print("管理员账号: admin@example.com")
-            print("管理员密码: admin123")
+        try:
+            from models import User
+            admin_user = User.query.filter_by(email='admin@example.com').first()
+            if not admin_user:
+                admin_user = User(
+                    username='admin',
+                    email='admin@example.com',
+                    phone='13800000000',
+                    address='管理员地址',
+                    is_admin=True
+                )
+                admin_user.set_password('admin123')
+                db.session.add(admin_user)
+                db.session.commit()
+                print("默认管理员用户创建完成")
+                print("管理员账号: admin@example.com 或 admin")
+                print("管理员密码: admin123")
+            else:
+                print("管理员用户已存在")
+                print("管理员账号: admin@example.com 或 admin")
+                print("管理员密码: admin123")
+        except Exception as e:
+            print(f"创建管理员用户时出错: {str(e)}")
+            print("请检查数据库连接")
     
     print("\n=== 校园二手物品交易平台API服务 ===")
     print("服务地址: http://localhost:5000")

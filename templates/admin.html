@@ -78,12 +78,7 @@
                                 消息管理
                             </a>
                         </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="#" onclick="showSection('statistics')">
-                                <i class="fas fa-chart-bar me-2"></i>
-                                数据统计
-                            </a>
-                        </li>
+
                     </ul>
                 </div>
             </nav>
@@ -500,157 +495,7 @@
                     </nav>
                 </div>
 
-                <!-- 数据统计 -->
-                <div id="statistics-section" class="content-section" style="display: none;">
-                    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-                        <h1 class="h2">数据统计</h1>
-                        <div class="btn-toolbar mb-2 mb-md-0">
-                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="refreshStatistics()">
-                                <i class="fas fa-refresh me-1"></i>刷新
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <!-- 统计概览卡片 -->
-                    <div class="row mb-4">
-                        <div class="col-xl-3 col-md-6 mb-4">
-                            <div class="card border-left-primary shadow h-100 py-2">
-                                <div class="card-body">
-                                    <div class="row no-gutters align-items-center">
-                                        <div class="col mr-2">
-                                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">总用户数</div>
-                                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="total-users">0</div>
-                                        </div>
-                                        <div class="col-auto">
-                                            <i class="fas fa-users fa-2x text-gray-300"></i>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="col-xl-3 col-md-6 mb-4">
-                            <div class="card border-left-success shadow h-100 py-2">
-                                <div class="card-body">
-                                    <div class="row no-gutters align-items-center">
-                                        <div class="col mr-2">
-                                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">总物品数</div>
-                                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="total-items">0</div>
-                                        </div>
-                                        <div class="col-auto">
-                                            <i class="fas fa-box fa-2x text-gray-300"></i>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="col-xl-3 col-md-6 mb-4">
-                            <div class="card border-left-info shadow h-100 py-2">
-                                <div class="card-body">
-                                    <div class="row no-gutters align-items-center">
-                                        <div class="col mr-2">
-                                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">总交易请求</div>
-                                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="total-requests">0</div>
-                                        </div>
-                                        <div class="col-auto">
-                                            <i class="fas fa-handshake fa-2x text-gray-300"></i>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="col-xl-3 col-md-6 mb-4">
-                            <div class="card border-left-warning shadow h-100 py-2">
-                                <div class="card-body">
-                                    <div class="row no-gutters align-items-center">
-                                        <div class="col mr-2">
-                                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">总评价数</div>
-                                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="total-reviews">0</div>
-                                        </div>
-                                        <div class="col-auto">
-                                            <i class="fas fa-star fa-2x text-gray-300"></i>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- 统计图表 -->
-                    <div class="row">
-                        <div class="col-lg-6 mb-4">
-                            <div class="card shadow">
-                                <div class="card-header py-3">
-                                    <h6 class="m-0 font-weight-bold text-primary">交易状态分布</h6>
-                                </div>
-                                <div class="card-body">
-                                    <canvas id="transactionStatusChart"></canvas>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="col-lg-6 mb-4">
-                            <div class="card shadow">
-                                <div class="card-header py-3">
-                                    <h6 class="m-0 font-weight-bold text-primary">物品分类分布</h6>
-                                </div>
-                                <div class="card-body">
-                                    <canvas id="categoryDistributionChart"></canvas>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="row">
-                        <div class="col-lg-6 mb-4">
-                            <div class="card shadow">
-                                <div class="card-header py-3">
-                                    <h6 class="m-0 font-weight-bold text-primary">用户信誉分布</h6>
-                                </div>
-                                <div class="card-body">
-                                    <canvas id="reputationChart"></canvas>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="col-lg-6 mb-4">
-                            <div class="card shadow">
-                                <div class="card-header py-3">
-                                    <h6 class="m-0 font-weight-bold text-primary">物品新旧程度分布</h6>
-                                </div>
-                                <div class="card-body">
-                                    <canvas id="conditionDistributionChart"></canvas>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="row">
-                        <div class="col-lg-6 mb-4">
-                            <div class="card shadow">
-                                <div class="card-header py-3">
-                                    <h6 class="m-0 font-weight-bold text-primary">每日活跃度趋势</h6>
-                                </div>
-                                <div class="card-body">
-                                    <canvas id="dailyActivityChart"></canvas>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="col-lg-6 mb-4">
-                            <div class="card shadow">
-                                <div class="card-header py-3">
-                                    <h6 class="m-0 font-weight-bold text-primary">月度交易趋势</h6>
-                                </div>
-                                <div class="card-body">
-                                    <canvas id="monthlyTransactionChart"></canvas>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+
             </main>
         </div>
     </div>
@@ -712,6 +557,97 @@
                 </div>
                 <div class="modal-body" id="itemDetailContent">
                     <!-- 物品详情内容将通过JavaScript加载 -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                    <button type="button" class="btn btn-primary" id="editItemBtn" onclick="showEditItemModal()">编辑物品</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 编辑物品模态框 -->
+    <div class="modal fade" id="editItemModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">编辑物品</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editItemForm">
+                        <input type="hidden" id="editItemId">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="editItemTitle" class="form-label">物品标题 *</label>
+                                    <input type="text" class="form-control" id="editItemTitle" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="editItemCategory" class="form-label">分类 *</label>
+                                    <select class="form-select" id="editItemCategory" required>
+                                        <option value="">请选择分类</option>
+                                        <!-- 分类选项将通过JavaScript加载 -->
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="editItemStatus" class="form-label">状态 *</label>
+                                    <select class="form-select" id="editItemStatus" required>
+                                        <option value="">请选择状态</option>
+                                        <option value="available">可用</option>
+                                        <option value="pending">待处理</option>
+                                        <option value="traded">已交易</option>
+                                        <option value="removed">已下架</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="editItemCondition" class="form-label">新旧程度 *</label>
+                                    <select class="form-select" id="editItemCondition" required>
+                                        <option value="">请选择新旧程度</option>
+                                        <option value="new">全新</option>
+                                        <option value="like_new">几乎全新</option>
+                                        <option value="good">良好</option>
+                                        <option value="fair">一般</option>
+                                        <option value="poor">较差</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editItemDescription" class="form-label">物品描述 *</label>
+                            <textarea class="form-control" id="editItemDescription" rows="4" required></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editItemOwner" class="form-label">物品所有者 *</label>
+                            <select class="form-select" id="editItemOwner" required>
+                                <option value="">请选择所有者</option>
+                                <!-- 用户选项将通过JavaScript加载 -->
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">当前图片</label>
+                            <div id="currentImages" class="mb-2">
+                                <!-- 当前图片将通过JavaScript加载 -->
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editItemImages" class="form-label">添加新图片</label>
+                            <input type="file" class="form-control" id="editItemImages" multiple accept="image/*">
+                            <div class="form-text">可选择多张图片，支持jpg、png格式</div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" onclick="updateItem()">保存修改</button>
                 </div>
             </div>
         </div>

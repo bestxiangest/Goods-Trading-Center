@@ -368,3 +368,101 @@ def get_all_users():
     except Exception as e:
         print(f"获取用户列表失败: {str(e)}")
         return error_response(f"获取用户列表失败: {str(e)}", 500)
+
+@auth_bp.route('/<int:user_id>', methods=['DELETE'])
+def delete_user(user_id):
+    """删除用户（管理员功能）"""
+    import traceback
+    print(f"开始删除用户，用户ID: {user_id}")
+    try:
+        # 检查是否为管理员
+        current_user = get_current_user()
+        print(f"当前用户: {current_user.username if current_user else 'None'}")
+        if not current_user or not current_user.is_admin:
+            return error_response("需要管理员权限", 403)
+        
+        # 查找要删除的用户
+        user = User.query.get(user_id)
+        if not user:
+            return error_response("用户不存在", 404)
+        
+        # 不能删除管理员用户
+        if user.is_admin:
+            return error_response("不能删除管理员用户", 400)
+        
+        # 不能删除自己
+        if user.user_id == current_user.user_id:
+            return error_response("不能删除自己的账户", 400)
+        
+        # 检查用户是否有未完成的交易
+        from models import Request, Item
+        # 查询用户作为请求者的未完成交易
+        requester_pending = Request.query.filter(
+            (Request.requester_id == user_id) &
+            (Request.status.in_(['pending', 'accepted']))
+        ).count()
+        
+        # 查询用户作为物品拥有者的未完成交易
+        owner_pending = Request.query.join(Item).filter(
+            (Item.user_id == user_id) &
+            (Request.status.in_(['pending', 'accepted']))
+        ).count()
+        
+        pending_requests = requester_pending + owner_pending
+        
+        if pending_requests > 0:
+            return error_response("该用户还有未完成的交易，无法删除", 400)
+        
+        # 删除用户相关数据
+        try:
+            # 删除用户的物品
+            from models import Item
+            user_items = Item.query.filter_by(user_id=user_id).all()
+            for item in user_items:
+                db.session.delete(item)
+            
+            # 删除用户的评价
+            from models import Review
+            user_reviews = Review.query.filter(
+                (Review.reviewer_id == user_id) | (Review.reviewee_id == user_id)
+            ).all()
+            for review in user_reviews:
+                db.session.delete(review)
+            
+            # 删除用户的消息
+            from models import Message
+            user_messages = Message.query.filter(
+                (Message.sender_id == user_id) | (Message.recipient_id == user_id)
+            ).all()
+            for message in user_messages:
+                db.session.delete(message)
+            
+            # 删除用户作为请求者的请求
+            requester_requests = Request.query.filter_by(requester_id=user_id).all()
+            for request in requester_requests:
+                db.session.delete(request)
+            
+            # 删除用户作为物品拥有者收到的请求
+            owner_requests = Request.query.join(Item).filter(Item.user_id == user_id).all()
+            for request in owner_requests:
+                db.session.delete(request)
+            
+            # 最后删除用户
+            db.session.delete(user)
+            db.session.commit()
+            
+            return success_response(
+                message=f"用户 {user.username} 已成功删除"
+            )
+            
+        except Exception as delete_error:
+            db.session.rollback()
+            print(f"删除用户数据时出错: {str(delete_error)}")
+            print(f"错误堆栈: {traceback.format_exc()}")
+            return error_response(f"删除用户数据时出错: {str(delete_error)}", 500)
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"删除用户失败: {str(e)}")
+        print(f"错误堆栈: {traceback.format_exc()}")
+        return error_response(f"删除用户失败: {str(e)}", 500)

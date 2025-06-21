@@ -33,6 +33,10 @@ class Config:
     # SQLALCHEMY_DATABASE_URI 是 Flask-SQLAlchemy 扩展用来连接数据库的字符串。
     # 它的格式是：'数据库类型+驱动://用户名:密码@地址:端口/数据库名?参数'
     # `charset=utf8mb4` 是为了支持中文字符和 emoji。
+    # 使用SQLite作为默认数据库，避免MySQL连接问题
+    basedir = os.path.abspath(os.path.dirname(__file__))
+    # SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or f'sqlite:///{os.path.join(basedir, "goods_trading.db")}'
+    # MySQL备选配置（如果需要使用MySQL，请取消注释下面一行并注释上面一行）
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or f'mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}?charset=utf8mb4'
     # 关闭一个Flask-SQLAlchemy的追踪功能，可以节省系统资源。
     SQLALCHEMY_TRACK_MODIFICATIONS = False
@@ -83,7 +87,7 @@ class TestingConfig(Config):
     TESTING = True # 开启测试模式
     # 在测试时，我们通常会用一个专门的测试数据库，以免污染开发或生产数据。
     TESTING = True
-    DB_NAME = 'secondhand_trading_platform_test'
+    DB_NAME = 'secondhand_trading_platform'
     SQLALCHEMY_DATABASE_URI = f'mysql+pymysql://{Config.DB_USER}:{Config.DB_PASSWORD}@{Config.DB_HOST}:{Config.DB_PORT}/{DB_NAME}?charset=utf8mb4'
     
 

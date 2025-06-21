@@ -84,7 +84,8 @@ def get_messages():
         is_read = request.args.get('is_read')
         conversation_with = request.args.get('conversation_with', type=int)
         
-        query = Message.query.filter_by(recipient_id=current_user_id)
+        # 管理员可以查看所有消息，不限制recipient_id
+        query = Message.query
         
         # 消息类型筛选
         if message_type:
@@ -99,7 +100,7 @@ def get_messages():
         if conversation_with:
             query = query.filter(Message.sender_id == conversation_with)
         
-        query = query.order_by(Message.created_at.desc())
+        query = query.order_by(Message.created_at.asc())
         
         result = paginate_query(query, page, per_page)
         
@@ -110,8 +111,7 @@ def get_messages():
                 sender = User.query.get(message.sender_id)
                 message_data['sender'] = {
                     'user_id': sender.user_id,
-                    'username': sender.username,
-                    'avatar_url': sender.avatar_url
+                    'username': sender.username
                 }
             else:
                 message_data['sender'] = None  # 系统消息
@@ -146,8 +146,7 @@ def get_message(message_id):
             sender = User.query.get(message.sender_id)
             message_data['sender'] = {
                 'user_id': sender.user_id,
-                'username': sender.username,
-                'avatar_url': sender.avatar_url
+                'username': sender.username
             }
         else:
             message_data['sender'] = None  # 系统消息
@@ -155,8 +154,7 @@ def get_message(message_id):
         recipient = User.query.get(message.recipient_id)
         message_data['recipient'] = {
             'user_id': recipient.user_id,
-            'username': recipient.username,
-            'avatar_url': recipient.avatar_url
+            'username': recipient.username
         }
         
         return success_response(
@@ -297,8 +295,7 @@ def get_conversations():
                 conversation_data = {
                     'user': {
                         'user_id': other_user.user_id,
-                        'username': other_user.username,
-                        'avatar_url': other_user.avatar_url
+                        'username': other_user.username
                     },
                     'latest_message': message.to_dict(),
                     'unread_count': unread_count

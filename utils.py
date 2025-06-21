@@ -22,6 +22,8 @@ def get_current_user():
             self.user_id = 1
             self.username = 'admin'
             self.is_admin = True
+            self.latitude = None
+            self.longitude = None
     
     return MockUser()
 

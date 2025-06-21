@@ -2,7 +2,7 @@ from flask import Blueprint, request, jsonify
 from models import Review, Request, User, Message, db
 from utils import success_response, error_response, validate_required_fields, paginate_query, update_user_reputation
 from datetime import datetime
-from sqlalchemy import func
+from sqlalchemy import func, or_
 
 reviews_bp = Blueprint('reviews', __name__, url_prefix='/api/v1/reviews')
 
@@ -69,7 +69,7 @@ def create_review():
         existing_review = Review.query.filter_by(
             request_id=request_id,
             reviewer_id=current_user_id,
-            reviewed_user_id=reviewed_user_id
+            reviewee_id=reviewed_user_id
         ).first()
         
         if existing_review:
@@ -79,7 +79,7 @@ def create_review():
         new_review = Review(
             request_id=request_id,
             reviewer_id=current_user_id,
-            reviewed_user_id=reviewed_user_id,
+            reviewee_id=reviewed_user_id,
             rating=rating,
             comment=comment if comment else None
         )
@@ -171,16 +171,9 @@ def get_reviews():
         
         result = paginate_query(query, page, per_page)
         
-        # 转换数据格式
-        reviews_data = []
-        for review_data in result['items']:
-            review = Review.query.get(review_data['review_id'])
-            if review:
-                reviews_data.append(review.to_dict())
-        
         return success_response(
             data={
-                'reviews': reviews_data,
+                'reviews': result['items'],
                 'pagination': result['pagination']
             },
             message="获取评价列表成功"
@@ -199,12 +192,12 @@ def get_user_review_statistics(user_id):
             return error_response("用户不存在", 404)
         
         # 收到的评价统计
-        received_reviews = Review.query.filter_by(reviewed_user_id=user_id)
+        received_reviews = Review.query.filter_by(reviewee_id=user_id)
         received_count = received_reviews.count()
         
         if received_count > 0:
             # 计算平均评分
-            avg_rating = db.session.query(func.avg(Review.rating)).filter_by(reviewed_user_id=user_id).scalar()
+            avg_rating = db.session.query(func.avg(Review.rating)).filter_by(reviewee_id=user_id).scalar()
             avg_rating = round(float(avg_rating), 2) if avg_rating else 0
             
             # 各星级评价数量
@@ -220,7 +213,7 @@ def get_user_review_statistics(user_id):
         given_count = Review.query.filter_by(reviewer_id=user_id).count()
         
         # 最近的评价
-        recent_reviews = Review.query.filter_by(reviewed_user_id=user_id)\
+        recent_reviews = Review.query.filter_by(reviewee_id=user_id)\
             .order_by(Review.created_at.desc())\
             .limit(5)\
             .all()
@@ -270,17 +263,15 @@ def get_request_reviews(request_id):
             review_data = review.to_dict()
             # 添加评价者和被评价者信息
             reviewer = User.query.get(review.reviewer_id)
-            reviewed_user = User.query.get(review.reviewed_user_id)
+            reviewed_user = User.query.get(review.reviewee_id)
             
             review_data['reviewer'] = {
                 'user_id': reviewer.user_id,
-                'username': reviewer.username,
-                'avatar_url': reviewer.avatar_url
+                'username': reviewer.username
             }
             review_data['reviewed_user'] = {
                 'user_id': reviewed_user.user_id,
-                'username': reviewed_user.username,
-                'avatar_url': reviewed_user.avatar_url
+                'username': reviewed_user.username
             }
             
             reviews_data.append(review_data)
@@ -297,7 +288,7 @@ def get_request_reviews(request_id):
             existing_review = Review.query.filter_by(
                 request_id=request_id,
                 reviewer_id=current_user_id,
-                reviewed_user_id=reviewed_user_id
+                reviewee_id=reviewed_user_id
             ).first()
             
             can_review = not existing_review
@@ -355,7 +346,7 @@ def update_review(review_id):
         review.updated_at = datetime.utcnow()
         
         # 重新计算被评价用户的信誉度
-        update_user_reputation(review.reviewed_user_id)
+        update_user_reputation(review.reviewee_id)
         
         db.session.commit()
         
@@ -390,7 +381,7 @@ def delete_review(review_id):
             if datetime.utcnow() - review.created_at > timedelta(hours=1):
                 return error_response("评价发布超过1小时后不能删除")
         
-        reviewed_user_id = review.reviewed_user_id
+        reviewed_user_id = review.reviewee_id
         
         db.session.delete(review)
         

@@ -5,28 +5,11 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="ada84f50-cd4c-4e3a-88ac-34eee39d7a31" name="更改" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/dataSources.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/uploads/items/airpods_1.jpg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/uploads/items/algorithm_book_1.jpg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/uploads/items/dumbbell_1.jpg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/uploads/items/english_book_1.jpg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/uploads/items/fcc30481a05d405abaca05395e9fade2.jpg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/uploads/items/iphone13_1.jpg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/uploads/items/macbook_1.jpg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/uploads/items/math_book_1.jpg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/uploads/items/xiaomi_lamp_1.jpg" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/Goods Trading Center.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/Goods Trading Center.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app.py" beforeDir="false" afterPath="$PROJECT_DIR$/app.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/auth.py" beforeDir="false" afterPath="$PROJECT_DIR$/auth.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/config.py" beforeDir="false" afterPath="$PROJECT_DIR$/config.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/models.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/requests.py" beforeDir="false" afterPath="$PROJECT_DIR$/requests.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/static/css/admin.css" beforeDir="false" afterPath="$PROJECT_DIR$/static/css/admin.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/items.py" beforeDir="false" afterPath="$PROJECT_DIR$/items.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/static/js/admin.js" beforeDir="false" afterPath="$PROJECT_DIR$/static/js/admin.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/statistics.py" beforeDir="false" afterPath="$PROJECT_DIR$/statistics.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/templates/admin.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/admin.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/utils.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -109,7 +92,7 @@
       <option name="presentableId" value="Default" />
       <updated>1749276185441</updated>
       <workItem from="1749276186079" duration="1238000" />
-      <workItem from="1750394249957" duration="7528000" />
+      <workItem from="1750394249957" duration="8391000" />
     </task>
     <servers />
   </component>
