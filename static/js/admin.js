@@ -1100,10 +1100,13 @@ function showItemDetail(itemId) {
 
 // 显示编辑物品模态框
 function showEditItemModal() {
+    console.log('showEditItemModal called, currentItemData:', currentItemData);
     if (!currentItemData) {
         showAlert('请先选择要编辑的物品', 'error');
         return;
     }
+    console.log('currentItemData.data:', currentItemData.data);
+    console.log('item_id:', currentItemData.data ? currentItemData.data.item_id : 'data is null');
     
     // 关闭详情模态框
     const detailModal = bootstrap.Modal.getInstance(document.getElementById('itemDetailModal'));
@@ -1139,18 +1142,25 @@ function showEditItemModal() {
         });
         
         // 填充表单数据
-        document.getElementById('editItemId').value = currentItemData.item_id;
-        document.getElementById('editItemTitle').value = currentItemData.title || '';
-        document.getElementById('editItemDescription').value = currentItemData.description || '';
-        document.getElementById('editItemCategory').value = currentItemData.category_id || '';
-        document.getElementById('editItemStatus').value = currentItemData.status || '';
-        document.getElementById('editItemCondition').value = currentItemData.condition || '';
-        document.getElementById('editItemOwner').value = currentItemData.user_id || '';
+        const itemId = currentItemData.data && currentItemData.data.item_id ? currentItemData.data.item_id : null;
+        if (!itemId) {
+            console.error('物品ID为空:', currentItemData);
+            showAlert('无法获取物品ID，请重新选择物品', 'error');
+            return;
+        }
+        document.getElementById('editItemId').value = itemId;
+        console.log('设置editItemId为:', itemId);
+        document.getElementById('editItemTitle').value = currentItemData.data.title || '';
+        document.getElementById('editItemDescription').value = currentItemData.data.description || '';
+        document.getElementById('editItemCategory').value = currentItemData.data.category_id || '';
+        document.getElementById('editItemStatus').value = currentItemData.data.status || '';
+        document.getElementById('editItemCondition').value = currentItemData.data.condition || '';
+        document.getElementById('editItemOwner').value = currentItemData.data.user_id || '';
         
         // 显示当前图片
         const currentImagesDiv = document.getElementById('currentImages');
-        if (currentItemData.images && currentItemData.images.length > 0) {
-            currentImagesDiv.innerHTML = currentItemData.images.map(img => `
+        if (currentItemData.data.images && currentItemData.data.images.length > 0) {
+            currentImagesDiv.innerHTML = currentItemData.data.images.map(img => `
                 <div class="d-inline-block position-relative me-2 mb-2">
                     <img src="${img.image_url}" alt="物品图片" class="current-image" data-image-url="${img.image_url}" data-image-id="${img.image_id}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 4px; cursor: pointer;" onerror="this.style.display='none';" onclick="showImagePreview('${img.image_url}')">
                     <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0" style="padding: 2px 6px; font-size: 12px;" onclick="removeImageFromEdit(${img.image_id})" title="删除图片">
@@ -1175,6 +1185,8 @@ function showEditItemModal() {
 // 更新物品
 async function updateItem() {
     const itemId = document.getElementById('editItemId').value;
+    console.log('editItemId value:', itemId);
+    console.log('currentItemData:', currentItemData);
     const title = document.getElementById('editItemTitle').value.trim();
     const description = document.getElementById('editItemDescription').value.trim();
     const categoryId = document.getElementById('editItemCategory').value;
@@ -1279,7 +1291,7 @@ function removeImage(imageId) {
             showAlert('图片删除成功', 'success');
             // 重新加载当前物品数据
             if (currentItemData) {
-                showItemDetail(currentItemData.item_id);
+                showItemDetail(currentItemData.data.item_id);
             }
         })
         .catch(error => {

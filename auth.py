@@ -347,7 +347,7 @@ def get_all_users():
             pages = (total + per_page - 1) // per_page
             
             result = {
-                'items': user_list,
+                'users': user_list,
                 'pagination': {
                     'page': page,
                     'per_page': per_page,

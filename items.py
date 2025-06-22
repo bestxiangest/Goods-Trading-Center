@@ -10,7 +10,7 @@ def create_item():
     """发布新物品"""
     try:
         # 使用固定的管理员用户ID
-        current_user_id = 1
+        current_user_id = get_current_user().user_id
         data = request.get_json()
         
         if not data:
@@ -177,7 +177,7 @@ def get_items():
         # 附近物品筛选
         current_user = get_current_user()
         if nearby and current_user and current_user.latitude and current_user.longitude:
-            # 这里简化处理，实际应用中可以使用空间索引优化
+            # 这里简化处理， 因为我不会（笑）
             query = query.filter(
                 and_(
                     Item.latitude.isnot(None),
@@ -237,7 +237,8 @@ def update_item(item_id):
     """更新物品信息"""
     try:
         # 使用固定的管理员用户ID
-        current_user_id = 1
+        current_user_id = get_current_user().user_id
+        print(current_user_id)
         item = Item.query.get(item_id)
         
         if not item:
@@ -357,6 +358,7 @@ def delete_item(item_id):
         ).count()
         
         if pending_requests > 0:
+            print("有未完成的请求,无法删除")
             return error_response("该物品还有待处理的请求，无法删除")
         
         db.session.delete(item)

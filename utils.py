@@ -42,6 +42,7 @@ def get_current_user():
             # 从数据库获取真实用户信息
             user = User.query.get(user_id)
             if user:
+                print("当前用户ID:", user_id)
                 return user
     except Exception as e:
         # JWT验证失败或其他错误，返回None
@@ -55,7 +56,7 @@ def get_current_user():
             self.is_admin = True
             self.latitude = None
             self.longitude = None
-    
+    print("当前用户ID(无有效jwt token):", 1)
     return MockUser()
 
 def jwt_required_optional(f):
