@@ -347,7 +347,7 @@ def get_all_users():
             pages = (total + per_page - 1) // per_page
             
             result = {
-                'users': user_list,
+                'items': user_list,  # 修改为items以匹配前端期望
                 'pagination': {
                     'page': page,
                     'per_page': per_page,
