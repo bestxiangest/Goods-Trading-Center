@@ -1,0 +1,1036 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>校园二手物品交易平台 - API测试工具</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            min-height: 600px;
+        }
+
+        .sidebar {
+            background: #f8f9fa;
+            padding: 20px;
+            border-right: 1px solid #e9ecef;
+        }
+
+        .api-section {
+            margin-bottom: 20px;
+        }
+
+        .api-section h3 {
+            color: #495057;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 5px;
+        }
+
+        .api-button {
+            display: block;
+            width: 100%;
+            padding: 10px 15px;
+            margin-bottom: 8px;
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: left;
+            font-size: 14px;
+        }
+
+        .api-button:hover {
+            background: #007bff;
+            color: white;
+            transform: translateX(5px);
+        }
+
+        .api-button.active {
+            background: #007bff;
+            color: white;
+        }
+
+
+
+        .api-form {
+            display: none;
+        }
+
+        .api-form.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #007bff;
+        }
+
+        .form-group textarea {
+            height: 100px;
+            resize: vertical;
+        }
+
+        .submit-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: transform 0.3s ease;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .response-area {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #007bff;
+        }
+
+        .response-area h4 {
+            margin-bottom: 15px;
+            color: #495057;
+        }
+
+        .response-content {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .token-display {
+            background: #e8f5e8;
+            border: 1px solid #c3e6c3;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-family: monospace;
+            font-size: 12px;
+            word-break: break-all;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 10;
+        }
+
+        .content-area {
+            padding: 30px;
+            position: relative;
+            padding-top: 80px; /* 为token显示区域预留空间 */
+        }
+
+        .token-display + .api-form {
+            margin-top: 0;
+        }
+
+        .method-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        .method-get { background: #28a745; color: white; }
+        .method-post { background: #007bff; color: white; }
+        .method-put { background: #ffc107; color: black; }
+        .method-delete { background: #dc3545; color: white; }
+
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        .error {
+            color: #dc3545;
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+
+        .success {
+            color: #155724;
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🛒 校园二手物品交易平台</h1>
+            <p>API接口测试工具 - 模拟用户操作验证接口功能</p>
+        </div>
+
+        <div class="main-content">
+            <div class="sidebar">
+                <div class="api-section">
+                    <h3>👤 用户管理</h3>
+                    <button class="api-button" onclick="showForm('register')">
+                        <span class="method-badge method-post">POST</span>用户注册
+                    </button>
+                    <button class="api-button" onclick="showForm('login')">
+                        <span class="method-badge method-post">POST</span>用户登录
+                    </button>
+                    <button class="api-button" onclick="showForm('profile')">
+                        <span class="method-badge method-get">GET</span>获取个人信息
+                    </button>
+                    <button class="api-button" onclick="showForm('updateProfile')">
+                        <span class="method-badge method-put">PUT</span>更新个人信息
+                    </button>
+                </div>
+
+                <div class="api-section">
+                    <h3>📦 物品管理</h3>
+                    <button class="api-button" onclick="showForm('createItem')">
+                        <span class="method-badge method-post">POST</span>发布物品
+                    </button>
+                    <button class="api-button" onclick="showForm('getItems')">
+                        <span class="method-badge method-get">GET</span>获取物品列表
+                    </button>
+                    <button class="api-button" onclick="showForm('getItem')">
+                        <span class="method-badge method-get">GET</span>获取物品详情
+                    </button>
+                    <button class="api-button" onclick="showForm('updateItem')">
+                        <span class="method-badge method-put">PUT</span>更新物品
+                    </button>
+                </div>
+
+                <div class="api-section">
+                    <h3>🏷️ 分类管理</h3>
+                    <button class="api-button" onclick="showForm('getCategories')">
+                        <span class="method-badge method-get">GET</span>获取分类列表
+                    </button>
+                    <button class="api-button" onclick="showForm('createCategory')">
+                        <span class="method-badge method-post">POST</span>创建分类
+                    </button>
+                </div>
+
+                <div class="api-section">
+                    <h3>🤝 交易请求</h3>
+                    <button class="api-button" onclick="showForm('createRequest')">
+                        <span class="method-badge method-post">POST</span>创建交易请求
+                    </button>
+                    <button class="api-button" onclick="showForm('getRequests')">
+                        <span class="method-badge method-get">GET</span>获取交易请求
+                    </button>
+                    <button class="api-button" onclick="showForm('updateRequest')">
+                        <span class="method-badge method-put">PUT</span>处理交易请求
+                    </button>
+                </div>
+
+                <div class="api-section">
+                    <h3>⭐ 评价管理</h3>
+                    <button class="api-button" onclick="showForm('createReview')">
+                        <span class="method-badge method-post">POST</span>创建评价
+                    </button>
+                    <button class="api-button" onclick="showForm('getReviews')">
+                        <span class="method-badge method-get">GET</span>获取评价列表
+                    </button>
+                </div>
+
+                <div class="api-section">
+                    <h3>💬 消息管理</h3>
+                    <button class="api-button" onclick="showForm('getMessages')">
+                        <span class="method-badge method-get">GET</span>获取消息列表
+                    </button>
+                    <button class="api-button" onclick="showForm('sendMessage')">
+                        <span class="method-badge method-post">POST</span>发送消息
+                    </button>
+                </div>
+
+                <div class="api-section">
+                    <h3>📊 统计数据</h3>
+                    <button class="api-button" onclick="showForm('getStatistics')">
+                        <span class="method-badge method-get">GET</span>获取统计数据
+                    </button>
+                </div>
+            </div>
+
+            <div class="content-area">
+                <div id="token-info" class="token-display" style="display: none;">
+                    <strong>当前Token:</strong> <span id="current-token">未登录</span>
+                </div>
+
+                <!-- 用户注册表单 -->
+                <div id="register" class="api-form">
+                    <h2>👤 用户注册</h2>
+                    <form onsubmit="submitForm(event, 'register')">
+                        <div class="form-group">
+                            <label>用户名 *</label>
+                            <input type="text" name="username" required placeholder="请输入用户名（2-20个字符）">
+                        </div>
+                        <div class="form-group">
+                            <label>密码 *</label>
+                            <input type="password" name="password" required placeholder="请输入密码（6-20个字符）">
+                        </div>
+                        <div class="form-group">
+                            <label>邮箱 *</label>
+                            <input type="email" name="email" required placeholder="请输入邮箱地址">
+                        </div>
+                        <div class="form-group">
+                            <label>手机号</label>
+                            <input type="tel" name="phone" placeholder="请输入手机号（可选）">
+                        </div>
+                        <div class="form-group">
+                            <label>地址 *</label>
+                            <input type="text" name="address" required placeholder="请输入详细地址">
+                        </div>
+                        <button type="submit" class="submit-btn">注册用户</button>
+                    </form>
+                </div>
+
+                <!-- 用户登录表单 -->
+                <div id="login" class="api-form">
+                    <h2>🔐 用户登录</h2>
+                    <form onsubmit="submitForm(event, 'login')">
+                        <div class="form-group">
+                            <label>用户名/邮箱 *</label>
+                            <input type="text" name="username" required placeholder="请输入用户名或邮箱">
+                        </div>
+                        <div class="form-group">
+                            <label>密码 *</label>
+                            <input type="password" name="password" required placeholder="请输入密码">
+                        </div>
+                        <button type="submit" class="submit-btn">登录</button>
+                    </form>
+                </div>
+
+                <!-- 获取个人信息 -->
+                <div id="profile" class="api-form">
+                    <h2>👤 获取个人信息</h2>
+                    <p>获取当前登录用户的详细信息</p>
+                    <button onclick="submitForm(event, 'profile')" class="submit-btn">获取个人信息</button>
+                </div>
+
+                <!-- 更新个人信息 -->
+                <div id="updateProfile" class="api-form">
+                    <h2>✏️ 更新个人信息</h2>
+                    <form onsubmit="submitForm(event, 'updateProfile')">
+                        <div class="form-group">
+                            <label>用户名</label>
+                            <input type="text" name="username" placeholder="新用户名（可选）">
+                        </div>
+                        <div class="form-group">
+                            <label>邮箱</label>
+                            <input type="email" name="email" placeholder="新邮箱（可选）">
+                        </div>
+                        <div class="form-group">
+                            <label>手机号</label>
+                            <input type="tel" name="phone" placeholder="新手机号（可选）">
+                        </div>
+                        <div class="form-group">
+                            <label>地址</label>
+                            <input type="text" name="address" placeholder="新地址（可选）">
+                        </div>
+                        <button type="submit" class="submit-btn">更新信息</button>
+                    </form>
+                </div>
+
+                <!-- 发布物品 -->
+                <div id="createItem" class="api-form">
+                    <h2>📦 发布物品</h2>
+                    <form onsubmit="submitForm(event, 'createItem')">
+                        <div class="form-group">
+                            <label>物品标题 *</label>
+                            <input type="text" name="title" required placeholder="请输入物品标题（1-100个字符）">
+                        </div>
+                        <div class="form-group">
+                            <label>物品描述 *</label>
+                            <textarea name="description" required placeholder="请详细描述物品信息（1-1000个字符）"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>分类ID *</label>
+                            <input type="number" name="category_id" required placeholder="请输入分类ID">
+                        </div>
+                        <div class="form-group">
+                            <label>物品状态 *</label>
+                            <select name="condition" required>
+                                <option value="">请选择物品状态</option>
+                                <option value="new">全新</option>
+                                <option value="like_new">几乎全新</option>
+                                <option value="used">使用过</option>
+                                <option value="worn">有磨损</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>图片URL *</label>
+                            <input type="url" name="image_urls" required placeholder="请输入图片URL（多个URL用逗号分隔）">
+                        </div>
+                        <div class="form-group">
+                            <label>纬度</label>
+                            <input type="number" name="latitude" step="any" placeholder="纬度（可选）">
+                        </div>
+                        <div class="form-group">
+                            <label>经度</label>
+                            <input type="number" name="longitude" step="any" placeholder="经度（可选）">
+                        </div>
+                        <button type="submit" class="submit-btn">发布物品</button>
+                    </form>
+                </div>
+
+                <!-- 获取物品列表 -->
+                <div id="getItems" class="api-form">
+                    <h2>📋 获取物品列表</h2>
+                    <form onsubmit="submitForm(event, 'getItems')">
+                        <div class="form-group">
+                            <label>页码</label>
+                            <input type="number" name="page" value="1" min="1" placeholder="页码">
+                        </div>
+                        <div class="form-group">
+                            <label>每页数量</label>
+                            <input type="number" name="per_page" value="20" min="1" max="100" placeholder="每页数量">
+                        </div>
+                        <div class="form-group">
+                            <label>分类ID</label>
+                            <input type="number" name="category_id" placeholder="按分类筛选">
+                        </div>
+                        <div class="form-group">
+                            <label>物品状态</label>
+                            <select name="condition">
+                                <option value="">全部状态</option>
+                                <option value="new">全新</option>
+                                <option value="like_new">几乎全新</option>
+                                <option value="used">使用过</option>
+                                <option value="worn">有磨损</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>搜索关键词</label>
+                            <input type="text" name="search" placeholder="搜索物品标题或描述">
+                        </div>
+                        <button type="submit" class="submit-btn">获取物品列表</button>
+                    </form>
+                </div>
+
+                <!-- 获取物品详情 -->
+                <div id="getItem" class="api-form">
+                    <h2>🔍 获取物品详情</h2>
+                    <form onsubmit="submitForm(event, 'getItem')">
+                        <div class="form-group">
+                            <label>物品ID *</label>
+                            <input type="number" name="item_id" required placeholder="请输入物品ID">
+                        </div>
+                        <button type="submit" class="submit-btn">获取物品详情</button>
+                    </form>
+                </div>
+
+                <!-- 更新物品 -->
+                <div id="updateItem" class="api-form">
+                    <h2>✏️ 更新物品</h2>
+                    <form onsubmit="submitForm(event, 'updateItem')">
+                        <div class="form-group">
+                            <label>物品ID *</label>
+                            <input type="number" name="item_id" required placeholder="请输入要更新的物品ID">
+                        </div>
+                        <div class="form-group">
+                            <label>物品标题</label>
+                            <input type="text" name="title" placeholder="新标题（可选）">
+                        </div>
+                        <div class="form-group">
+                            <label>物品描述</label>
+                            <textarea name="description" placeholder="新描述（可选）"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>物品状态</label>
+                            <select name="condition">
+                                <option value="">不修改</option>
+                                <option value="new">全新</option>
+                                <option value="like_new">几乎全新</option>
+                                <option value="used">使用过</option>
+                                <option value="worn">有磨损</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="submit-btn">更新物品</button>
+                    </form>
+                </div>
+
+                <!-- 获取分类列表 -->
+                <div id="getCategories" class="api-form">
+                    <h2>🏷️ 获取分类列表</h2>
+                    <p>获取所有物品分类信息</p>
+                    <button onclick="submitForm(event, 'getCategories')" class="submit-btn">获取分类列表</button>
+                </div>
+
+                <!-- 创建分类 -->
+                <div id="createCategory" class="api-form">
+                    <h2>➕ 创建分类</h2>
+                    <form onsubmit="submitForm(event, 'createCategory')">
+                        <div class="form-group">
+                            <label>分类名称 *</label>
+                            <input type="text" name="name" required placeholder="请输入分类名称">
+                        </div>
+                        <div class="form-group">
+                            <label>分类描述</label>
+                            <textarea name="description" placeholder="分类描述（可选）"></textarea>
+                        </div>
+                        <button type="submit" class="submit-btn">创建分类</button>
+                    </form>
+                </div>
+
+                <!-- 创建交易请求 -->
+                <div id="createRequest" class="api-form">
+                    <h2>🤝 创建交易请求</h2>
+                    <form onsubmit="submitForm(event, 'createRequest')">
+                        <div class="form-group">
+                            <label>物品ID *</label>
+                            <input type="number" name="item_id" required placeholder="请输入要交易的物品ID">
+                        </div>
+                        <div class="form-group">
+                            <label>留言</label>
+                            <textarea name="message" placeholder="给卖家的留言（可选）"></textarea>
+                        </div>
+                        <button type="submit" class="submit-btn">创建交易请求</button>
+                    </form>
+                </div>
+
+                <!-- 获取交易请求 -->
+                <div id="getRequests" class="api-form">
+                    <h2>📋 获取交易请求</h2>
+                    <form onsubmit="submitForm(event, 'getRequests')">
+                        <div class="form-group">
+                            <label>页码</label>
+                            <input type="number" name="page" value="1" min="1" placeholder="页码">
+                        </div>
+                        <div class="form-group">
+                            <label>每页数量</label>
+                            <input type="number" name="per_page" value="20" min="1" max="100" placeholder="每页数量">
+                        </div>
+                        <div class="form-group">
+                            <label>请求状态</label>
+                            <select name="status">
+                                <option value="">全部状态</option>
+                                <option value="pending">待处理</option>
+                                <option value="accepted">已接受</option>
+                                <option value="rejected">已拒绝</option>
+                                <option value="completed">已完成</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="submit-btn">获取交易请求</button>
+                    </form>
+                </div>
+
+                <!-- 处理交易请求 -->
+                <div id="updateRequest" class="api-form">
+                    <h2>✅ 处理交易请求</h2>
+                    <form onsubmit="submitForm(event, 'updateRequest')">
+                        <div class="form-group">
+                            <label>请求ID *</label>
+                            <input type="number" name="request_id" required placeholder="请输入交易请求ID">
+                        </div>
+                        <div class="form-group">
+                            <label>操作 *</label>
+                            <select name="action" required>
+                                <option value="">请选择操作</option>
+                                <option value="accepted">接受请求</option>
+                                <option value="rejected">拒绝请求</option>
+                                <option value="cancelled">取消请求</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="submit-btn">处理请求</button>
+                    </form>
+                </div>
+
+                <!-- 创建评价 -->
+                <div id="createReview" class="api-form">
+                    <h2>⭐ 创建评价</h2>
+                    <form onsubmit="submitForm(event, 'createReview')">
+                        <div class="form-group">
+                            <label>交易请求ID *</label>
+                            <input type="number" name="request_id" required placeholder="请输入交易请求ID">
+                        </div>
+                        <div class="form-group">
+                            <label>评分 *</label>
+                            <select name="rating" required>
+                                <option value="">请选择评分</option>
+                                <option value="1">1星 - 很差</option>
+                                <option value="2">2星 - 较差</option>
+                                <option value="3">3星 - 一般</option>
+                                <option value="4">4星 - 良好</option>
+                                <option value="5">5星 - 优秀</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>评价内容</label>
+                            <textarea name="comment" placeholder="请输入评价内容（可选）"></textarea>
+                        </div>
+                        <button type="submit" class="submit-btn">提交评价</button>
+                    </form>
+                </div>
+
+                <!-- 获取评价列表 -->
+                <div id="getReviews" class="api-form">
+                    <h2>📋 获取评价列表</h2>
+                    <form onsubmit="submitForm(event, 'getReviews')">
+                        <div class="form-group">
+                            <label>用户ID</label>
+                            <input type="number" name="user_id" placeholder="查看指定用户的评价">
+                        </div>
+                        <div class="form-group">
+                            <label>页码</label>
+                            <input type="number" name="page" value="1" min="1" placeholder="页码">
+                        </div>
+                        <div class="form-group">
+                            <label>每页数量</label>
+                            <input type="number" name="per_page" value="20" min="1" max="100" placeholder="每页数量">
+                        </div>
+                        <button type="submit" class="submit-btn">获取评价列表</button>
+                    </form>
+                </div>
+
+                <!-- 获取消息列表 -->
+                <div id="getMessages" class="api-form">
+                    <h2>💬 获取消息列表</h2>
+                    <form onsubmit="submitForm(event, 'getMessages')">
+                        <div class="form-group">
+                            <label>页码</label>
+                            <input type="number" name="page" value="1" min="1" placeholder="页码">
+                        </div>
+                        <div class="form-group">
+                            <label>每页数量</label>
+                            <input type="number" name="per_page" value="20" min="1" max="100" placeholder="每页数量">
+                        </div>
+                        <div class="form-group">
+                            <label>消息类型</label>
+                            <select name="type">
+                                <option value="">全部类型</option>
+                                <option value="system">系统消息</option>
+                                <option value="request">交易请求</option>
+                                <option value="review">评价通知</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="submit-btn">获取消息列表</button>
+                    </form>
+                </div>
+
+                <!-- 发送消息 -->
+                <div id="sendMessage" class="api-form">
+                    <h2>📤 发送消息</h2>
+                    <form onsubmit="submitForm(event, 'sendMessage')">
+                        <div class="form-group">
+                            <label>接收者ID *</label>
+                            <input type="number" name="recipient_id" required placeholder="请输入接收者用户ID">
+                        </div>
+                        <div class="form-group">
+                            <label>消息内容 *</label>
+                            <textarea name="content" required placeholder="请输入消息内容"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>消息类型</label>
+                            <select name="type">
+                                <option value="system_announcement">系统公告</option>
+                                <option value="request_notification">请求通知</option>
+                                <option value="status_update">状态更新</option>
+                                <option value="chat_message">聊天消息</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="submit-btn">发送消息</button>
+                    </form>
+                </div>
+
+                <!-- 获取统计数据 -->
+                <div id="getStatistics" class="api-form">
+                    <h2>📊 获取统计数据</h2>
+                    <p>获取平台的统计数据信息</p>
+                    <button onclick="submitForm(event, 'getStatistics')" class="submit-btn">获取统计数据</button>
+                </div>
+
+                <div id="response" class="response-area" style="display: none;">
+                    <h4>📄 响应结果</h4>
+                    <div id="response-content" class="response-content"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:5000/api/v1';
+        let currentToken = null;
+
+        // 显示指定的表单
+        function showForm(formId) {
+            // 隐藏所有表单
+            const forms = document.querySelectorAll('.api-form');
+            forms.forEach(form => form.classList.remove('active'));
+            
+            // 移除所有按钮的active状态
+            const buttons = document.querySelectorAll('.api-button');
+            buttons.forEach(btn => btn.classList.remove('active'));
+            
+            // 显示选中的表单
+            document.getElementById(formId).classList.add('active');
+            
+            // 添加按钮的active状态
+            event.target.classList.add('active');
+        }
+
+        // 更新Token显示
+        function updateTokenDisplay(token) {
+            currentToken = token;
+            const tokenInfo = document.getElementById('token-info');
+            const tokenSpan = document.getElementById('current-token');
+            
+            if (token) {
+                tokenInfo.style.display = 'block';
+                tokenSpan.textContent = token;
+            } else {
+                tokenInfo.style.display = 'none';
+                tokenSpan.textContent = '未登录';
+            }
+        }
+
+        // 显示响应结果
+        function showResponse(data) {
+            const responseArea = document.getElementById('response');
+            const responseContent = document.getElementById('response-content');
+            
+            responseArea.style.display = 'block';
+            responseContent.textContent = JSON.stringify(data, null, 2);
+            
+            // 滚动到响应区域
+            responseArea.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // 提交表单
+        async function submitForm(event, formType) {
+            event.preventDefault();
+            
+            const form = event.target.tagName === 'FORM' ? event.target : null;
+            const submitBtn = event.target.tagName === 'BUTTON' ? event.target : form?.querySelector('button[type="submit"]');
+            
+            if (submitBtn) {
+                submitBtn.classList.add('loading');
+                submitBtn.textContent = '请求中...';
+            }
+
+            try {
+                let url, method, body, headers = {
+                    'Content-Type': 'application/json'
+                };
+
+                // 如果有token，添加到请求头
+                if (currentToken) {
+                    headers['Authorization'] = `Bearer ${currentToken}`;
+                }
+
+                // 根据表单类型构建请求
+                switch (formType) {
+                    case 'register':
+                        url = `${API_BASE_URL}/users/register`;
+                        method = 'POST';
+                        body = getFormData(form);
+                        break;
+                    
+                    case 'login':
+                        url = `${API_BASE_URL}/users/login`;
+                        method = 'POST';
+                        body = getFormData(form);
+                        break;
+                    
+                    case 'profile':
+                        url = `${API_BASE_URL}/users/me`;
+                        method = 'GET';
+                        break;
+                    
+                    case 'updateProfile':
+                        url = `${API_BASE_URL}/users/me`;
+                        method = 'PUT';
+                        body = getFormData(form, true); // 只包含非空字段
+                        break;
+                    
+                    case 'createItem':
+                        url = `${API_BASE_URL}/items`;
+                        method = 'POST';
+                        const itemData = getFormData(form);
+                        // 处理图片URL数组
+                        if (itemData.image_urls) {
+                            itemData.image_urls = itemData.image_urls.split(',').map(url => url.trim());
+                        }
+                        body = itemData;
+                        break;
+                    
+                    case 'getItems':
+                        url = `${API_BASE_URL}/items`;
+                        method = 'GET';
+                        const params = new URLSearchParams();
+                        const itemsData = getFormData(form, true);
+                        Object.entries(itemsData).forEach(([key, value]) => {
+                            if (value) params.append(key, value);
+                        });
+                        if (params.toString()) {
+                            url += '?' + params.toString();
+                        }
+                        break;
+                    
+                    case 'getItem':
+                        const itemId = form.querySelector('[name="item_id"]').value;
+                        url = `${API_BASE_URL}/items/${itemId}`;
+                        method = 'GET';
+                        break;
+                    
+                    case 'updateItem':
+                        const updateItemId = form.querySelector('[name="item_id"]').value;
+                        url = `${API_BASE_URL}/items/${updateItemId}`;
+                        method = 'PUT';
+                        body = getFormData(form, true);
+                        delete body.item_id; // 移除item_id，因为它在URL中
+                        break;
+                    
+                    case 'getCategories':
+                        url = `${API_BASE_URL}/categories`;
+                        method = 'GET';
+                        break;
+                    
+                    case 'createCategory':
+                        url = `${API_BASE_URL}/categories`;
+                        method = 'POST';
+                        body = getFormData(form);
+                        break;
+                    
+                    case 'createRequest':
+                        url = `${API_BASE_URL}/requests`;
+                        method = 'POST';
+                        body = getFormData(form);
+                        break;
+                    
+                    case 'getRequests':
+                        url = `${API_BASE_URL}/requests`;
+                        method = 'GET';
+                        const requestParams = new URLSearchParams();
+                        const requestsData = getFormData(form, true);
+                        Object.entries(requestsData).forEach(([key, value]) => {
+                            if (value) requestParams.append(key, value);
+                        });
+                        if (requestParams.toString()) {
+                            url += '?' + requestParams.toString();
+                        }
+                        break;
+                    
+                    case 'updateRequest':
+                        const requestId = form.querySelector('[name="request_id"]').value;
+                        url = `${API_BASE_URL}/requests/${requestId}/status`;
+                        method = 'PUT';
+                        body = { status: form.querySelector('[name="action"]').value };
+                        break;
+                    
+                    case 'createReview':
+                        url = `${API_BASE_URL}/reviews`;
+                        method = 'POST';
+                        body = getFormData(form);
+                        break;
+                    
+                    case 'getReviews':
+                        url = `${API_BASE_URL}/reviews`;
+                        method = 'GET';
+                        const reviewParams = new URLSearchParams();
+                        const reviewsData = getFormData(form, true);
+                        Object.entries(reviewsData).forEach(([key, value]) => {
+                            if (value) reviewParams.append(key, value);
+                        });
+                        if (reviewParams.toString()) {
+                            url += '?' + reviewParams.toString();
+                        }
+                        break;
+                    
+                    case 'getMessages':
+                        url = `${API_BASE_URL}/messages`;
+                        method = 'GET';
+                        const messageParams = new URLSearchParams();
+                        const messagesData = getFormData(form, true);
+                        Object.entries(messagesData).forEach(([key, value]) => {
+                            if (value) messageParams.append(key, value);
+                        });
+                        if (messageParams.toString()) {
+                            url += '?' + messageParams.toString();
+                        }
+                        break;
+                    
+                    case 'sendMessage':
+                        url = `${API_BASE_URL}/messages`;
+                        method = 'POST';
+                        body = getFormData(form);
+                        break;
+                    
+                    case 'getStatistics':
+                        url = `${API_BASE_URL}/statistics`;
+                        method = 'GET';
+                        break;
+                    
+                    default:
+                        throw new Error('未知的表单类型');
+                }
+
+                // 发送请求
+                const options = {
+                    method,
+                    headers,
+                    mode: 'cors',
+                    credentials: 'same-origin'
+                };
+
+                if (body && method !== 'GET') {
+                    options.body = JSON.stringify(body);
+                }
+
+                const response = await fetch(url, options);
+                const data = await response.json();
+
+                // 如果是登录成功，保存token
+                if (formType === 'login' && data.data && data.data.token) {
+                    updateTokenDisplay(data.data.token);
+                }
+
+                showResponse(data);
+
+            } catch (error) {
+                showResponse({
+                    error: true,
+                    message: error.message,
+                    details: '请求失败，请检查网络连接和服务器状态'
+                });
+            } finally {
+                // 恢复按钮状态
+                if (submitBtn) {
+                    submitBtn.classList.remove('loading');
+                    const originalText = {
+                        'register': '注册用户',
+                        'login': '登录',
+                        'profile': '获取个人信息',
+                        'updateProfile': '更新信息',
+                        'createItem': '发布物品',
+                        'getItems': '获取物品列表',
+                        'getItem': '获取物品详情',
+                        'updateItem': '更新物品',
+                        'getCategories': '获取分类列表',
+                        'createCategory': '创建分类',
+                        'createRequest': '创建交易请求',
+                        'getRequests': '获取交易请求',
+                        'updateRequest': '处理请求',
+                        'createReview': '提交评价',
+                        'getReviews': '获取评价列表',
+                        'getMessages': '获取消息列表',
+                        'sendMessage': '发送消息',
+                        'getStatistics': '获取统计数据'
+                    };
+                    submitBtn.textContent = originalText[formType] || '提交';
+                }
+            }
+        }
+
+        // 获取表单数据
+        function getFormData(form, onlyNonEmpty = false) {
+            if (!form) return {};
+            
+            const formData = new FormData(form);
+            const data = {};
+            
+            for (let [key, value] of formData.entries()) {
+                if (onlyNonEmpty && (!value || value.trim() === '')) {
+                    continue;
+                }
+                
+                // 处理数字类型
+                if (key.includes('_id') || key === 'page' || key === 'per_page' || key === 'rating' || key === 'latitude' || key === 'longitude') {
+                    data[key] = value ? Number(value) : value;
+                } else {
+                    data[key] = value;
+                }
+            }
+            
+            return data;
+        }
+
+        // 页面加载完成后显示第一个表单
+        document.addEventListener('DOMContentLoaded', function() {
+            showForm('register');
+        });
+    </script>
+</body>
+</html>

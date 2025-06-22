@@ -638,9 +638,29 @@ function displayRequests(requests) {
             </td>
             <td>${formatDateTime(request.created_at)}</td>
             <td>
-                <button class="btn btn-sm btn-outline-primary" onclick="showRequestDetail(${request.id})">
-                    <i class="fas fa-eye"></i>
-                </button>
+                <div class="btn-group" role="group">
+                    <button class="btn btn-sm btn-outline-primary" onclick="showRequestDetail(${request.id})" title="查看详情">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-success" onclick="editRequestFromList(${request.id})" title="编辑">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <div class="btn-group" role="group">
+                        <button class="btn btn-sm btn-outline-warning dropdown-toggle" data-bs-toggle="dropdown" title="更改状态">
+                            <i class="fas fa-exchange-alt"></i>
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#" onclick="changeRequestStatus(${request.id}, 'pending')">待处理</a></li>
+                            <li><a class="dropdown-item" href="#" onclick="changeRequestStatus(${request.id}, 'accepted')">已接受</a></li>
+                            <li><a class="dropdown-item" href="#" onclick="changeRequestStatus(${request.id}, 'rejected')">已拒绝</a></li>
+                            <li><a class="dropdown-item" href="#" onclick="changeRequestStatus(${request.id}, 'cancelled')">已取消</a></li>
+                            <li><a class="dropdown-item" href="#" onclick="changeRequestStatus(${request.id}, 'completed')">已完成</a></li>
+                        </ul>
+                    </div>
+                    <button class="btn btn-sm btn-outline-danger" onclick="deleteRequest(${request.id})" title="删除">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
             </td>
         </tr>
     `).join('');
@@ -966,7 +986,7 @@ function getStatusText(status) {
     const statusMap = {
         'available': '可用',
         'pending': '待处理',
-        'traded': '已交易',
+        'completed': '已完成',
         'removed': '已下架',
         'reserved': '已预订',
         'completed': '已完成',
@@ -1716,3 +1736,342 @@ async function addItem() {
         showAlert(error.message || '添加物品失败', 'danger');
     }
 }
+
+// ==================== 交易请求管理功能 ====================
+
+// 显示新增交易请求模态框
+function showAddRequestModal() {
+    // 清空表单
+    document.getElementById('addRequestForm').reset();
+    
+    // 加载物品和用户选项
+    loadItemsForRequest();
+    loadUsersForRequest();
+    
+    // 显示模态框
+    const modal = new bootstrap.Modal(document.getElementById('addRequestModal'));
+    modal.show();
+}
+
+// 为请求加载可用物品
+function loadItemsForRequest() {
+    apiRequest('/items?status=available&per_page=100')
+        .then(response => {
+            const items = response.data?.items || [];
+            const select = document.getElementById('requestItem');
+            
+            select.innerHTML = '<option value="">请选择物品</option>';
+            items.forEach(item => {
+                select.innerHTML += `<option value="${item.item_id}">${item.title} (${item.owner_username})</option>`;
+            });
+        })
+        .catch(error => {
+            console.error('Failed to load items:', error);
+        });
+}
+
+// 为请求加载用户
+function loadUsersForRequest() {
+    apiRequest('/users?per_page=100')
+        .then(response => {
+            const users = response.data?.users || [];
+            const select = document.getElementById('requestRequester');
+            
+            select.innerHTML = '<option value="">请选择请求者</option>';
+            users.forEach(user => {
+                select.innerHTML += `<option value="${user.user_id}">${user.username}</option>`;
+            });
+        })
+        .catch(error => {
+            console.error('Failed to load users:', error);
+        });
+}
+
+// 创建新的交易请求
+async function addRequest() {
+    try {
+        const itemId = document.getElementById('requestItem').value;
+        const requesterId = document.getElementById('requestRequester').value;
+        const message = document.getElementById('requestMessage').value.trim();
+        const status = document.getElementById('requestStatus').value;
+        
+        if (!itemId || !requesterId) {
+            showAlert('请选择物品和请求者', 'warning');
+            return;
+        }
+        
+        const requestData = {
+            item_id: parseInt(itemId),
+            requester_id: parseInt(requesterId),
+            message: message || null,
+            status: status
+        };
+        
+        // 如果是管理员创建，需要特殊处理
+        const response = await apiRequest('/requests/admin', {
+            method: 'POST',
+            body: JSON.stringify(requestData)
+        });
+        
+        showAlert('交易请求创建成功', 'success');
+        
+        // 关闭模态框
+        const modal = bootstrap.Modal.getInstance(document.getElementById('addRequestModal'));
+        modal.hide();
+        
+        // 刷新列表
+        loadRequests();
+        
+    } catch (error) {
+        console.error('Failed to create request:', error);
+        showAlert('创建交易请求失败: ' + error.message, 'danger');
+    }
+}
+
+// 从列表直接编辑请求
+function editRequestFromList(requestId) {
+    // 先获取请求详情，然后显示编辑模态框
+    apiRequest(`/requests/${requestId}`)
+        .then(response => {
+            const request = response.data;
+            showEditRequestModalWithData(request);
+        })
+        .catch(error => {
+            console.error('Failed to load request:', error);
+            showAlert('获取请求详情失败: ' + error.message, 'danger');
+        });
+}
+
+// 显示编辑交易请求模态框
+function showEditRequestModal() {
+    // 从详情模态框获取请求ID
+    const requestId = document.getElementById('requestDetailContent').dataset.requestId;
+    if (requestId) {
+        editRequestFromList(requestId);
+    }
+}
+
+// 使用数据显示编辑模态框
+function showEditRequestModalWithData(request) {
+    // 填充表单数据
+    document.getElementById('editRequestId').value = request.request_id;
+    document.getElementById('editRequestItem').value = request.item_title || '';
+    document.getElementById('editRequestRequester').value = request.requester_username || '';
+    document.getElementById('editRequestMessage').value = request.message || '';
+    document.getElementById('editRequestStatus').value = request.status;
+    document.getElementById('editRequestCreatedAt').value = formatDateTime(request.created_at);
+    document.getElementById('editRequestUpdatedAt').value = formatDateTime(request.updated_at);
+    
+    // 显示模态框
+    const modal = new bootstrap.Modal(document.getElementById('editRequestModal'));
+    modal.show();
+}
+
+// 更新交易请求
+async function updateRequest() {
+    try {
+        const requestId = document.getElementById('editRequestId').value;
+        const message = document.getElementById('editRequestMessage').value.trim();
+        const status = document.getElementById('editRequestStatus').value;
+        
+        const updateData = {
+            message: message || null,
+            status: status
+        };
+        
+        await apiRequest(`/requests/${requestId}/admin`, {
+            method: 'PUT',
+            body: JSON.stringify(updateData)
+        });
+        
+        showAlert('交易请求更新成功', 'success');
+        
+        // 关闭模态框
+        const modal = bootstrap.Modal.getInstance(document.getElementById('editRequestModal'));
+        modal.hide();
+        
+        // 刷新列表
+        loadRequests();
+        
+    } catch (error) {
+        console.error('Failed to update request:', error);
+        showAlert('更新交易请求失败: ' + error.message, 'danger');
+    }
+}
+
+// 更改交易请求状态
+async function changeRequestStatus(requestId, newStatus) {
+    try {
+        const confirmed = confirm(`确定要将交易请求状态更改为"${getRequestStatusText(newStatus)}"吗？`);
+        if (!confirmed) return;
+        
+        await apiRequest(`/requests/${requestId}/admin`, {
+            method: 'PUT',
+            body: JSON.stringify({ status: newStatus })
+        });
+        
+        showAlert('状态更新成功', 'success');
+        loadRequests();
+        
+    } catch (error) {
+        console.error('Failed to change status:', error);
+        showAlert('状态更新失败: ' + error.message, 'danger');
+    }
+}
+
+// 删除交易请求
+async function deleteRequest(requestId) {
+    try {
+        const confirmed = confirm('确定要删除这个交易请求吗？此操作不可撤销。');
+        if (!confirmed) return;
+        
+        await apiRequest(`/requests/${requestId}`, {
+            method: 'DELETE'
+        });
+        
+        showAlert('交易请求删除成功', 'success');
+        loadRequests();
+        
+    } catch (error) {
+        console.error('Failed to delete request:', error);
+        showAlert('删除交易请求失败: ' + error.message, 'danger');
+    }
+}
+
+// 显示交易请求详情
+function showRequestDetail(requestId) {
+    apiRequest(`/requests/${requestId}`)
+        .then(response => {
+            const request = response.data;
+            displayRequestDetail(request);
+            
+            // 保存请求ID到详情容器
+            document.getElementById('requestDetailContent').dataset.requestId = request.request_id;
+            
+            // 显示模态框
+            const modal = new bootstrap.Modal(document.getElementById('requestDetailModal'));
+            modal.show();
+        })
+        .catch(error => {
+            console.error('Failed to load request detail:', error);
+            showAlert('获取请求详情失败: ' + error.message, 'danger');
+        });
+}
+
+// 显示交易请求详情内容
+function displayRequestDetail(request) {
+    const content = document.getElementById('requestDetailContent');
+    
+    content.innerHTML = `
+        <div class="row">
+            <div class="col-md-6">
+                <h6>基本信息</h6>
+                <table class="table table-sm">
+                    <tr><td><strong>请求ID:</strong></td><td>${request.request_id}</td></tr>
+                    <tr><td><strong>状态:</strong></td><td><span class="status-badge status-${request.status}">${getRequestStatusText(request.status)}</span></td></tr>
+                    <tr><td><strong>创建时间:</strong></td><td>${formatDateTime(request.created_at)}</td></tr>
+                    <tr><td><strong>更新时间:</strong></td><td>${formatDateTime(request.updated_at)}</td></tr>
+                </table>
+            </div>
+            <div class="col-md-6">
+                <h6>参与者信息</h6>
+                <table class="table table-sm">
+                    <tr><td><strong>请求者:</strong></td><td>${request.requester_username || '-'}</td></tr>
+                    <tr><td><strong>物品所有者:</strong></td><td>${request.item?.owner_username || '-'}</td></tr>
+                </table>
+            </div>
+        </div>
+        
+        <div class="row mt-3">
+            <div class="col-12">
+                <h6>物品信息</h6>
+                <div class="card">
+                    <div class="card-body">
+                        <h6 class="card-title">${request.item?.title || '未知物品'}</h6>
+                        <p class="card-text">${request.item?.description || '无描述'}</p>
+                        <small class="text-muted">分类: ${request.item?.category_name || '未分类'} | 状态: ${request.item?.status || '未知'}</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        ${request.message ? `
+        <div class="row mt-3">
+            <div class="col-12">
+                <h6>附言</h6>
+                <div class="alert alert-info">
+                    ${request.message}
+                </div>
+            </div>
+        </div>
+        ` : ''}
+    `;
+}
+
+// 获取请求状态文本
+function getRequestStatusText(status) {
+    const statusMap = {
+        'pending': '待处理',
+        'accepted': '已接受',
+        'rejected': '已拒绝',
+        'cancelled': '已取消',
+        'completed': '已完成'
+    };
+    return statusMap[status] || status;
+}
+
+// 处理下拉菜单显示时的容器overflow问题
+document.addEventListener('DOMContentLoaded', function() {
+    // 监听所有下拉菜单的显示/隐藏事件
+    document.addEventListener('show.bs.dropdown', function(event) {
+        const dropdownMenu = event.target.nextElementSibling;
+        if (dropdownMenu && dropdownMenu.classList.contains('dropdown-menu')) {
+            // 获取触发按钮的位置
+            const rect = event.target.getBoundingClientRect();
+            
+            // 将下拉菜单移动到body下
+            document.body.appendChild(dropdownMenu);
+            
+            // 设置绝对定位
+            dropdownMenu.style.position = 'fixed';
+            dropdownMenu.style.top = (rect.bottom + 2) + 'px';
+            dropdownMenu.style.left = rect.left + 'px';
+            dropdownMenu.style.zIndex = '99999';
+            dropdownMenu.style.display = 'block';
+            
+            // 标记为已移动
+            dropdownMenu.setAttribute('data-moved', 'true');
+            dropdownMenu.setAttribute('data-original-parent', event.target.parentElement.className);
+        }
+        
+        const tableResponsive = event.target.closest('.table-responsive');
+        if (tableResponsive) {
+            tableResponsive.classList.add('dropdown-menu-visible');
+        }
+    });
+    
+    document.addEventListener('hide.bs.dropdown', function(event) {
+        const dropdownMenu = document.querySelector('.dropdown-menu[data-moved="true"]');
+        if (dropdownMenu) {
+            // 将下拉菜单移回原位置
+            const btnGroup = event.target.parentElement;
+            if (btnGroup) {
+                btnGroup.appendChild(dropdownMenu);
+            }
+            
+            // 重置样式
+            dropdownMenu.style.position = '';
+            dropdownMenu.style.top = '';
+            dropdownMenu.style.left = '';
+            dropdownMenu.style.zIndex = '';
+            dropdownMenu.style.display = '';
+            dropdownMenu.removeAttribute('data-moved');
+            dropdownMenu.removeAttribute('data-original-parent');
+        }
+        
+        const tableResponsive = event.target.closest('.table-responsive');
+        if (tableResponsive) {
+            tableResponsive.classList.remove('dropdown-menu-visible');
+        }
+    });
+});

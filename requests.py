@@ -401,3 +401,231 @@ def get_request_statistics():
         
     except Exception as e:
         return error_response(f"获取请求统计失败: {str(e)}", 500)
+
+
+@requests_bp.route('/admin', methods=['POST'])
+def admin_create_request():
+    """管理员创建交易请求"""
+    try:
+        data = request.get_json()
+        
+        if not data:
+            return error_response("请求数据不能为空")
+        
+        # 验证必需字段
+        required_fields = ['item_id', 'requester_id']
+        validation_error = validate_required_fields(data, required_fields)
+        if validation_error:
+            return error_response(validation_error)
+        
+        item_id = data['item_id']
+        requester_id = data['requester_id']
+        message_content = data.get('message', '').strip()
+        status = data.get('status', 'pending')
+        
+        # 验证物品是否存在
+        item = Item.query.get(item_id)
+        if not item:
+            return error_response("物品不存在", 404)
+        
+        # 验证请求者是否存在
+        requester = User.query.get(requester_id)
+        if not requester:
+            return error_response("请求者不存在", 404)
+        
+        # 检查是否已存在相同的请求
+        existing_request = Request.query.filter_by(
+            item_id=item_id,
+            requester_id=requester_id,
+            status='pending'
+        ).first()
+        
+        if existing_request:
+            return error_response("该用户已对此物品发起过待处理的交易请求")
+        
+        # 创建新的交易请求
+        new_request = Request(
+            item_id=item_id,
+            requester_id=requester_id,
+            message=message_content if message_content else None,
+            status=status
+        )
+        
+        db.session.add(new_request)
+        db.session.commit()
+        
+        # 创建通知消息
+        if status == 'pending':
+            create_notification_message(
+                recipient_id=item.user_id,
+                sender_id=requester_id,
+                message_type='request',
+                related_id=new_request.request_id,
+                content=f"用户 {requester.username} 请求交易您的物品 \"{item.title}\""
+            )
+        
+        db.session.commit()
+        
+        return success_response(
+            data=new_request.to_dict(),
+            message="交易请求创建成功"
+        )
+        
+    except Exception as e:
+        db.session.rollback()
+        return error_response(f"创建交易请求失败: {str(e)}", 500)
+
+@requests_bp.route('/<int:request_id>/admin', methods=['PUT'])
+def admin_update_request(request_id):
+    """管理员更新交易请求"""
+    try:
+        data = request.get_json()
+        
+        if not data:
+            return error_response("请求数据不能为空")
+        
+        # 查找请求
+        req = Request.query.get(request_id)
+        if not req:
+            return error_response("交易请求不存在", 404)
+        
+        # 更新字段
+        if 'message' in data:
+            req.message = data['message']
+        
+        if 'status' in data:
+            old_status = req.status
+            new_status = data['status']
+            
+            # 验证状态值
+            valid_statuses = ['pending', 'accepted', 'rejected', 'cancelled', 'completed']
+            if new_status not in valid_statuses:
+                return error_response(f"无效的状态值: {new_status}")
+            
+            req.status = new_status
+            req.updated_at = datetime.utcnow()
+            
+            # 如果状态发生变化，创建通知
+            if old_status != new_status:
+                if new_status == 'accepted':
+                    # 检查物品是否存在
+                    if not req.item:
+                        return error_response("关联的物品不存在", 404)
+                    
+                    # 更新物品状态为预留
+                    req.item.status = 'reserved'
+                    
+                    # 通知请求者
+                    create_notification_message(
+                        recipient_id=req.requester_id,
+                        sender_id=req.item.user_id,
+                        message_type='status_update',
+                        related_id=req.request_id,
+                        content=f"您对物品 \"{req.item.title}\" 的交易请求已被接受"
+                    )
+                    
+                    # 拒绝其他待处理的请求
+                    other_requests = Request.query.filter(
+                        Request.item_id == req.item_id,
+                        Request.request_id != req.request_id,
+                        Request.status == 'pending'
+                    ).all()
+                    
+                    for other_req in other_requests:
+                        other_req.status = 'rejected'
+                        other_req.updated_at = datetime.utcnow()
+                        
+                        # 通知被拒绝的请求者
+                        create_notification_message(
+                            recipient_id=other_req.requester_id,
+                            sender_id=req.item.user_id,
+                            message_type='status_update',
+                            related_id=other_req.request_id,
+                            content=f"您对物品 \"{req.item.title}\" 的交易请求已被拒绝"
+                        )
+                
+                elif new_status == 'rejected':
+                    # 检查物品是否存在
+                    if not req.item:
+                        return error_response("关联的物品不存在", 404)
+                    
+                    # 通知请求者
+                    create_notification_message(
+                        recipient_id=req.requester_id,
+                        sender_id=req.item.user_id,
+                        message_type='status_update',
+                        related_id=req.request_id,
+                        content=f"您对物品 \"{req.item.title}\" 的交易请求已被拒绝"
+                    )
+                
+                elif new_status == 'completed':
+                    # 检查物品是否存在
+                    if not req.item:
+                        return error_response("关联的物品不存在", 404)
+                    
+                    # 更新物品状态
+                    req.item.status = 'completed'
+                    
+                    # 通知双方
+                    # 获取用户信息
+                    item_owner = User.query.get(req.item.user_id)
+                    requester = User.query.get(req.requester_id)
+                    
+                    if item_owner and requester:
+                        create_notification_message(
+                            recipient_id=req.requester_id,
+                            sender_id=req.item.user_id,
+                            message_type='status_update',
+                            related_id=req.request_id,
+                            content=f"您与 {item_owner.username} 的物品 \"{req.item.title}\" 交易已完成"
+                        )
+                        
+                        create_notification_message(
+                            recipient_id=req.item.user_id,
+                            sender_id=req.requester_id,
+                            message_type='status_update',
+                            related_id=req.request_id,
+                            content=f"您与 {requester.username} 的物品 \"{req.item.title}\" 交易已完成"
+                        )
+        
+        db.session.commit()
+        
+        return success_response(
+            data=req.to_dict(),
+            message="交易请求更新成功"
+        )
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Admin update request error: {str(e)}")
+        print(f"Error type: {type(e).__name__}")
+        import traceback
+        traceback.print_exc()
+        return error_response(f"更新交易请求失败: {str(e)}", 500)
+
+@requests_bp.route('/<int:request_id>', methods=['DELETE'])
+def admin_delete_request(request_id):
+    """管理员删除交易请求"""
+    try:
+        # 查找请求
+        req = Request.query.get(request_id)
+        if not req:
+            return error_response("交易请求不存在", 404)
+        
+        # 删除相关的通知消息
+        Message.query.filter_by(related_id=request_id, type='request').delete()
+        Message.query.filter_by(related_id=request_id, type='request_accepted').delete()
+        Message.query.filter_by(related_id=request_id, type='request_rejected').delete()
+        Message.query.filter_by(related_id=request_id, type='request_completed').delete()
+        
+        # 删除请求
+        db.session.delete(req)
+        db.session.commit()
+        
+        return success_response(
+            message="交易请求删除成功"
+        )
+        
+    except Exception as e:
+        db.session.rollback()
+        return error_response(f"删除交易请求失败: {str(e)}", 500)

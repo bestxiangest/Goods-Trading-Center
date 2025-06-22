@@ -26,7 +26,7 @@ def create_app(config_class=DevelopmentConfig):
     # 初始化扩展
     db.init_app(app)
     jwt = JWTManager(app)
-    CORS(app, origins=app.config['CORS_ORIGINS'])
+    CORS(app, origins="*", supports_credentials=True, allow_headers=["Content-Type", "Authorization"])
     migrate = Migrate(app, db)
     
     # 创建上传目录

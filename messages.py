@@ -45,8 +45,7 @@ def send_message():
             return error_response("消息内容长度不能超过1000个字符")
         
         # 验证消息类型
-        valid_types = ['user_message', 'system_message', 'request_notification', 
-                      'status_update', 'review_notification']
+        valid_types = ['request_notification', 'status_update', 'system_announcement', 'chat_message']
         if message_type not in valid_types:
             return error_response(f"消息类型必须是: {', '.join(valid_types)} 之一")
         
@@ -415,8 +414,7 @@ def get_message_statistics():
         
         # 按类型统计未读消息
         unread_by_type = {}
-        message_types = ['user_message', 'system_message', 'request_notification', 
-                        'status_update', 'review_notification']
+        message_types = ['request_notification', 'status_update', 'system_announcement', 'chat_message']
         
         for msg_type in message_types:
             count = Message.query.filter_by(

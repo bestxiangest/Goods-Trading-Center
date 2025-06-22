@@ -94,7 +94,7 @@ class Item(db.Model):
     title = db.Column(db.String(100), nullable=False, comment='物品标题')
     description = db.Column(db.Text, nullable=False, comment='物品详细描述')
     category_id = db.Column(db.Integer, db.ForeignKey('item_category.category_id'), nullable=False, comment='分类ID')
-    status = db.Column(db.Enum('available', 'reserved', 'completed', 'cancelled', name='item_status'), 
+    status = db.Column(db.Enum('available', 'reserved', 'completed', 'cancelled', 'removed', name='item_status'), 
                       nullable=False, default='available', comment='物品状态')
     condition = db.Column(db.Enum('new', 'like_new', 'used', 'worn', name='item_condition'), 
                          nullable=False, comment='新旧程度')
@@ -154,7 +154,7 @@ class Request(db.Model):
     item_id = db.Column(db.Integer, db.ForeignKey('item.item_id'), nullable=False, comment='目标物品ID')
     requester_id = db.Column(db.Integer, db.ForeignKey('user.user_id'), nullable=False, comment='请求者ID')
     message = db.Column(db.String(200), comment='附言')
-    status = db.Column(db.Enum('pending', 'accepted', 'rejected', 'cancelled', name='request_status'), 
+    status = db.Column(db.Enum('pending', 'accepted', 'rejected', 'cancelled', 'completed', name='request_status'), 
                       nullable=False, default='pending', comment='请求状态')
     created_at = db.Column(db.DateTime, default=datetime.utcnow, comment='请求时间')
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, comment='请求状态最后更新时间')

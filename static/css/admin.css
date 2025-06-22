@@ -422,3 +422,72 @@ main {
     margin-bottom: 0;
     font-size: 0.9rem;
 }
+
+/* 下拉菜单层级修复 */
+.dropdown-menu {
+    z-index: 99999 !important;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    position: absolute !important;
+}
+
+.btn-group .dropdown-menu {
+    z-index: 99999 !important;
+}
+
+/* 确保下拉菜单在表格中正确显示 */
+table .dropdown {
+    position: relative !important;
+}
+
+table .dropdown-menu {
+    position: absolute !important;
+    z-index: 99999 !important;
+    top: 100% !important;
+    left: 0 !important;
+}
+
+/* 强制所有下拉菜单显示在最上层 */
+.dropdown-toggle + .dropdown-menu {
+    z-index: 99999 !important;
+}
+
+.show .dropdown-menu {
+    z-index: 99999 !important;
+}
+
+/* 额外确保Bootstrap下拉菜单显示在最上层 */
+.dropdown-menu.show {
+    z-index: 99999 !important;
+}
+
+/* 针对表格行内的下拉菜单特别处理 */
+tbody .dropdown-menu {
+    z-index: 99999 !important;
+    position: fixed !important;
+}
+
+/* 解决table-responsive容器裁剪下拉菜单的问题 */
+.table-responsive {
+    overflow: visible !important;
+}
+
+/* 确保表格容器不会裁剪下拉菜单 */
+.table-responsive .dropdown {
+    position: static !important;
+}
+
+.table-responsive .dropdown-menu {
+    position: absolute !important;
+    z-index: 99999 !important;
+    transform: none !important;
+}
+
+/* 当下拉菜单显示时，临时移除容器的overflow限制 */
+.table-responsive:has(.dropdown-menu.show) {
+    overflow: visible !important;
+}
+
+/* 备用方案：使用JavaScript动态调整 */
+.dropdown-menu-visible {
+    overflow: visible !important;
+}

@@ -56,8 +56,8 @@ def create_review():
             return error_response("只能对已完成的交易进行评价")
         
         # 检查评价权限（只有交易双方可以评价）
-        if current_user_id not in [req.requester_id, req.item.user_id]:
-            return error_response("只有交易双方可以进行评价", 403)
+        # if current_user_id not in [req.requester_id, req.item.user_id]:
+        #     return error_response("只有交易双方可以进行评价", 403)
         
         # 确定被评价者
         if current_user_id == req.requester_id:

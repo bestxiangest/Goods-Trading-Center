@@ -335,7 +335,10 @@
                     <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
                         <h1 class="h2">交易请求</h1>
                         <div class="btn-toolbar mb-2 mb-md-0">
-                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="refreshRequests()">
+                            <button type="button" class="btn btn-sm btn-primary" onclick="showAddRequestModal()">
+                                <i class="fas fa-plus me-1"></i>新增交易
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary ms-2" onclick="refreshRequests()">
                                 <i class="fas fa-refresh me-1"></i>刷新
                             </button>
                         </div>
@@ -602,7 +605,7 @@
                                         <option value="">请选择状态</option>
                                         <option value="available">可用</option>
                                         <option value="pending">待处理</option>
-                                        <option value="traded">已交易</option>
+                                        <option value="completed">已完成</option>
                                         <option value="removed">已下架</option>
                                     </select>
                                 </div>
@@ -770,6 +773,138 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
                     <button type="button" class="btn btn-primary" onclick="addItem()">添加</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 新增交易请求模态框 -->
+    <div class="modal fade" id="addRequestModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">新增交易请求</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="addRequestForm">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="requestItem" class="form-label">选择物品 *</label>
+                                    <select class="form-select" id="requestItem" required>
+                                        <option value="">请选择物品</option>
+                                        <!-- 物品选项将通过JavaScript加载 -->
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="requestRequester" class="form-label">请求者 *</label>
+                                    <select class="form-select" id="requestRequester" required>
+                                        <option value="">请选择请求者</option>
+                                        <!-- 用户选项将通过JavaScript加载 -->
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="requestMessage" class="form-label">附言</label>
+                            <textarea class="form-control" id="requestMessage" rows="3" maxlength="200" placeholder="可选的附言信息..."></textarea>
+                            <div class="form-text">最多200个字符</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="requestStatus" class="form-label">初始状态</label>
+                            <select class="form-select" id="requestStatus">
+                                <option value="pending">待处理</option>
+                                <option value="accepted">已接受</option>
+                                <option value="rejected">已拒绝</option>
+                                <option value="cancelled">已取消</option>
+                                <option value="completed">已完成</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" onclick="addRequest()">创建交易</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 编辑交易请求模态框 -->
+    <div class="modal fade" id="editRequestModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">编辑交易请求</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editRequestForm">
+                        <input type="hidden" id="editRequestId">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="editRequestItem" class="form-label">物品</label>
+                                    <input type="text" class="form-control" id="editRequestItem" readonly>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="editRequestRequester" class="form-label">请求者</label>
+                                    <input type="text" class="form-control" id="editRequestRequester" readonly>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editRequestMessage" class="form-label">附言</label>
+                            <textarea class="form-control" id="editRequestMessage" rows="3" maxlength="200"></textarea>
+                            <div class="form-text">最多200个字符</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editRequestStatus" class="form-label">状态 *</label>
+                            <select class="form-select" id="editRequestStatus" required>
+                                <option value="pending">待处理</option>
+                                <option value="accepted">已接受</option>
+                                <option value="rejected">已拒绝</option>
+                                <option value="cancelled">已取消</option>
+                                <option value="completed">已完成</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">创建时间</label>
+                            <input type="text" class="form-control" id="editRequestCreatedAt" readonly>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">最后更新</label>
+                            <input type="text" class="form-control" id="editRequestUpdatedAt" readonly>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" onclick="updateRequest()">保存更改</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 交易请求详情模态框 -->
+    <div class="modal fade" id="requestDetailModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">交易请求详情</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="requestDetailContent">
+                    <!-- 请求详情内容将通过JavaScript加载 -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                    <button type="button" class="btn btn-primary" id="editRequestBtn" onclick="showEditRequestModal()">编辑请求</button>
                 </div>
             </div>
         </div>
