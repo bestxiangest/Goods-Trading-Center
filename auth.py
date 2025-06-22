@@ -191,7 +191,7 @@ def get_current_user_info():
             data={
                 'user_id': 1,
                 'username': 'admin',
-                'email': 'admin@example.com',
+                'email': 'admin@qq.com',
                 'is_admin': True
             },
             message="获取用户信息成功"
@@ -209,7 +209,7 @@ def verify_user():
             data={
                 'user_id': 1,
                 'username': 'admin',
-                'email': 'admin@example.com',
+                'email': 'admin@qq.com',
                 'is_admin': True
             },
             message="用户验证成功"
@@ -227,7 +227,7 @@ def update_current_user_info():
             data={
                 'user_id': 1,
                 'username': 'admin',
-                'email': 'admin@example.com',
+                'email': 'admin@qq.com',
                 'is_admin': True
             },
             message="用户信息更新成功"
@@ -239,6 +239,7 @@ def update_current_user_info():
 @auth_bp.route('/<int:user_id>', methods=['GET'])
 def get_user_info(user_id):
     """获取指定用户的公开信息"""
+    print(f"调用获取用户信息接口,用户为：{user_id}")
     try:
         user = User.query.get(user_id)
         if not user:
@@ -249,7 +250,8 @@ def get_user_info(user_id):
         include_sensitive = current_user and (current_user.user_id == user_id or current_user.is_admin)
         
         # 添加用户统计信息
-        user_data = user.to_dict(include_sensitive=include_sensitive)
+        # user_data = user.to_dict(include_sensitive=include_sensitive)
+        user_data = user.to_dict(include_sensitive=True)# 直接获取敏感数据
         
         # 发布物品数量
         user_data['items_count'] = user.items.count()
@@ -411,6 +413,7 @@ def delete_user(user_id):
         pending_requests = requester_pending + owner_pending
         
         if pending_requests > 0:
+            print(f"用户 {user.username} 还有未完成的交易")
             return error_response("该用户还有未完成的交易，无法删除", 400)
         
         # 删除用户相关数据

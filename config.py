@@ -2,27 +2,18 @@ import os
 from datetime import timedelta
 from dotenv import load_dotenv
 
-# --------------------------------------------------------------------------------
-# 1. 加载环境变量 (Load Environment Variables)
-# --------------------------------------------------------------------------------
+# 加载环境变量 (Load Environment Variables)
 # load_dotenv() 会读取项目根目录下的一个叫 .env 的文件。
-# 这是一个好习惯，我们可以把敏感信息（比如数据库密码）写在 .env 文件里，
-# 而不是直接写在代码中。.env 文件通常不会被提交到代码仓库（比如 Git），这样更安全。
+
 load_dotenv()
-# --------------------------------------------------------------------------------
-# 2. 基础配置类 (Base Config Class)
-# --------------------------------------------------------------------------------
-# 我们创建一个叫 Config 的基础类，所有环境通用的配置都放在这里。
+# 基础配置类 (Base Config Class)
+# 创建一个叫 Config 的基础类，所有环境通用的配置都放在这里。
 # 其他特定环境的配置类可以继承它，并覆盖或添加自己的配置。
 class Config:
     """基础配置类"""
-    # SECRET_KEY 是一个安全密钥，Flask 和它的一些扩展会用它来加密信息，
-    # 比如用户的 session 信息。这个值应该是随机且保密的。
-    # os.environ.get(...) 会先尝试从环境变量里读取，如果找不到，就使用后面的默认值。
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'dev-secret-key-change-in-production'
     
     # ----------------- 数据库配置 (Database Configuration) -----------------
-    # 这里定义了连接到 MySQL 数据库所需要的所有信息。
     # 数据库配置 - 使用MySQL数据库
     DB_HOST = os.environ.get('DB_HOST') or 'localhost'
     DB_PORT = os.environ.get('DB_PORT') or '3306'
@@ -33,10 +24,9 @@ class Config:
     # SQLALCHEMY_DATABASE_URI 是 Flask-SQLAlchemy 扩展用来连接数据库的字符串。
     # 它的格式是：'数据库类型+驱动://用户名:密码@地址:端口/数据库名?参数'
     # `charset=utf8mb4` 是为了支持中文字符和 emoji。
-    # 使用SQLite作为默认数据库，避免MySQL连接问题
     basedir = os.path.abspath(os.path.dirname(__file__))
     # SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or f'sqlite:///{os.path.join(basedir, "goods_trading.db")}'
-    # MySQL备选配置（如果需要使用MySQL，请取消注释下面一行并注释上面一行）
+    # 如果需要使用MySQL，请取消注释下面一行并注释上面一行
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or f'mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}?charset=utf8mb4'
     # 关闭一个Flask-SQLAlchemy的追踪功能，可以节省系统资源。
     SQLALCHEMY_TRACK_MODIFICATIONS = False
@@ -61,15 +51,12 @@ class Config:
     
     # ----------------- CORS 配置 (CORS Configuration) -----------------
     # CORS_ORIGINS 是一个列表，里面包含了允许访问我们后端API的前端服务器地址。
-    # 比如前端项目运行在 http://localhost:3000，我们就需要把它加到这里。
     CORS_ORIGINS = [
         'http://localhost:3000', 'http://127.0.0.1:3000',
         'http://localhost:5000', 'http://127.0.0.1:5000'
     ]
 
-# --------------------------------------------------------------------------------
-# 3. 特定环境配置类 (Environment-specific Configs)
-# --------------------------------------------------------------------------------
+# 特定环境配置类 (Environment-specific Configs)
 # 这些类都继承自上面的 Config 基类，所以它们拥有所有基础配置，
 # 并且可以定义自己独有的或覆盖掉基础的配置。
 class DevelopmentConfig(Config):
@@ -84,16 +71,13 @@ class ProductionConfig(Config):
     
 class TestingConfig(Config):
     """测试环境配置"""
-    TESTING = True # 开启测试模式
     # 在测试时，我们通常会用一个专门的测试数据库，以免污染开发或生产数据。
     TESTING = True
-    DB_NAME = 'secondhand_trading_platform'
+    DB_NAME = 'secondhand_trading_platform_test'
     SQLALCHEMY_DATABASE_URI = f'mysql+pymysql://{Config.DB_USER}:{Config.DB_PASSWORD}@{Config.DB_HOST}:{Config.DB_PORT}/{DB_NAME}?charset=utf8mb4'
     
 
-# --------------------------------------------------------------------------------
-# 4. 配置字典 (Config Dictionary)
-# --------------------------------------------------------------------------------
+# 配置字典 (Config Dictionary)
 # 创建一个字典，方便我们根据一个字符串（'development', 'production'等）来选择使用哪个配置类。
 # 在 app.py 中，我们默认使用了 DevelopmentConfig。
 config = {

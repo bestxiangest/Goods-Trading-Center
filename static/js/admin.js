@@ -1011,28 +1011,29 @@ function showUserDetail(userId) {
     apiRequest(`/users/${userId}`)
         .then(user => {
             const modal = new bootstrap.Modal(document.getElementById('userDetailModal'));
+            console.log(user)
             document.getElementById('userDetailContent').innerHTML = `
                 <div class="row">
                     <div class="col-md-6">
                         <h6>基本信息</h6>
-                        <p><strong>用户名:</strong> ${user.username}</p>
-                        <p><strong>邮箱:</strong> ${user.email}</p>
-                        <p><strong>手机号:</strong> ${user.phone || '-'}</p>
-                        <p><strong>地址:</strong> ${user.address || '-'}</p>
-                        <p><strong>角色:</strong> ${user.is_admin ? '管理员' : '普通用户'}</p>
+                        <p><strong>用户名:</strong> ${user.data.username}</p>
+                        <p><strong>邮箱:</strong> ${user.data.email}</p>
+                        <p><strong>手机号:</strong> ${user.data.phone || '-'}</p>
+                        <p><strong>地址:</strong> ${user.data.address || '-'}</p>
+                        <p><strong>角色:</strong> ${user.data.is_admin ? '管理员' : '普通用户'}</p>
                     </div>
                     <div class="col-md-6">
                         <h6>统计信息</h6>
                         <p><strong>信誉评分:</strong> 
                             <div class="rating-stars">
-                                ${generateStars(user.reputation_score || 0)}
-                                <span class="ms-1">${(user.reputation_score || 0).toFixed(1)}</span>
+                                ${generateStars(user.data.reputation_score || 0)}
+                                <span class="ms-1">${(user.data.reputation_score || 0).toFixed(1)}</span>
                             </div>
                         </p>
-                        <p><strong>发布物品数:</strong> ${user.items_count || 0}</p>
-                        <p><strong>交易次数:</strong> ${user.transactions_count || 0}</p>
-                        <p><strong>注册时间:</strong> ${formatDateTime(user.created_at)}</p>
-                        <p><strong>最后登录:</strong> ${formatDateTime(user.last_login)}</p>
+                        <p><strong>发布物品数:</strong> ${user.data.items_count || 0}</p>
+                        <p><strong>交易次数:</strong> ${user.data.transactions_count || 0}</p>
+                        <p><strong>注册时间:</strong> ${formatDateTime(user.data.created_at)}</p>
+                        <p><strong>最后登录:</strong> ${formatDateTime(user.data.last_login)}</p>
                     </div>
                 </div>
             `;
@@ -1051,36 +1052,36 @@ function showItemDetail(itemId) {
         .then(item => {
             // 存储当前物品数据
             currentItemData = item;
-            
+            console.log(item)
             const modal = new bootstrap.Modal(document.getElementById('itemDetailModal'));
             document.getElementById('itemDetailContent').innerHTML = `
                 <div class="row">
                     <div class="col-md-6">
                         <h6>物品信息</h6>
-                        <p><strong>物品ID:</strong> ${item.item_id}</p>
-                        <p><strong>标题:</strong> ${item.title}</p>
-                        <p><strong>描述:</strong> ${item.description || '-'}</p>
-                        <p><strong>分类:</strong> ${item.category_name || '-'}</p>
+                        <p><strong>物品ID:</strong> ${item.data.item_id || '-'}</p>
+                        <p><strong>标题:</strong> ${item.data.title || '-'}</p>
+                        <p><strong>描述:</strong> ${item.data.description || '-'}</p>
+                        <p><strong>分类:</strong> ${item.data.category_name || '-'}</p>
                         <p><strong>状态:</strong> 
-                            <span class="status-badge status-${item.status}">
-                                ${getStatusText(item.status)}
+                            <span class="status-badge status-${item.data.status}">
+                                ${getStatusText(item.data.status)}
                             </span>
                         </p>
-                        <p><strong>新旧程度:</strong> ${getConditionText(item.condition)}</p>
-                        <p><strong>发布者:</strong> ${item.owner_username || '-'}</p>
+                        <p><strong>新旧程度:</strong> ${getConditionText(item.data.condition)}</p>
+                        <p><strong>发布者:</strong> ${item.data.owner_username || '-'}</p>
                     </div>
                     <div class="col-md-6">
                         <h6>其他信息</h6>
-                        <p><strong>发布时间:</strong> ${formatDateTime(item.created_at)}</p>
-                        <p><strong>更新时间:</strong> ${formatDateTime(item.updated_at)}</p>
-                        ${item.latitude && item.longitude ? `
-                            <p><strong>位置:</strong> ${item.latitude}, ${item.longitude}</p>
+                        <p><strong>发布时间:</strong> ${formatDateTime(item.data.created_at)}</p>
+                        <p><strong>更新时间:</strong> ${formatDateTime(item.data.updated_at)}</p>
+                        ${item.latitude && item.data.longitude ? `
+                            <p><strong>位置:</strong> ${item.data.latitude}, ${item.data.longitude}</p>
                         ` : ''}
-                        ${item.images && item.images.length > 0 ? `
+                        ${item.data.images && item.data.images.length > 0 ? `
                             <div>
                                 <strong>图片:</strong>
                                 <div class="mt-2">
-                                    ${item.images.map(img => `
+                                    ${item.data.images.map(img => `
                                         <img src="${img.image_url}" alt="物品图片" class="me-2 mb-2" style="width: 80px; height: 80px; object-fit: cover; border-radius: 4px; cursor: pointer;" onerror="this.style.display='none';" onclick="showImagePreview('${img.image_url}')">
                                     `).join('')}
                                 </div>

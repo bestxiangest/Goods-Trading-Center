@@ -60,7 +60,7 @@ class ItemCategory(db.Model):
     parent_id = db.Column(db.Integer, db.ForeignKey('item_category.category_id'), comment='父分类ID')
     
     # 关系
-    children = db.relationship('ItemCategory', backref=db.backref('parent', remote_side=[category_id]), lazy='dynamic')
+    children = db.relationship('ItemCategory', backref=db.backref('parent', remote_side=[category_id]), lazy='dynamic',cascade='all, delete-orphan')
     items = db.relationship('Item', backref='category', lazy='dynamic')
     
     def to_dict(self, include_children=False):

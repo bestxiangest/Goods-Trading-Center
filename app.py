@@ -165,11 +165,11 @@ if __name__ == '__main__':
         # 创建默认管理员用户（如果不存在）
         try:
             from models import User
-            admin_user = User.query.filter_by(email='admin@example.com').first()
+            admin_user = User.query.filter_by(email='admin@qq.com').first()
             if not admin_user:
                 admin_user = User(
                     username='admin',
-                    email='admin@example.com',
+                    email='admin@qq.com',
                     phone='13800000000',
                     address='管理员地址',
                     is_admin=True
@@ -178,11 +178,11 @@ if __name__ == '__main__':
                 db.session.add(admin_user)
                 db.session.commit()
                 print("默认管理员用户创建完成")
-                print("管理员账号: admin@example.com 或 admin")
+                print("管理员账号: admin@qq.com 或 admin")
                 print("管理员密码: admin123")
             else:
                 print("管理员用户已存在")
-                print("管理员账号: admin@example.com 或 admin")
+                print("管理员账号: admin@qq.com 或 admin")
                 print("管理员密码: admin123")
         except Exception as e:
             print(f"创建管理员用户时出错: {str(e)}")

@@ -141,7 +141,7 @@ def get_items():
         per_page = request.args.get('per_page', 20, type=int)
         category_id = request.args.get('category_id', type=int)
         condition = request.args.get('condition')
-        status = request.args.get('status', 'available')
+        status = request.args.get('status')
         search = request.args.get('search', '').strip()
         user_id = request.args.get('user_id', type=int)
         nearby = request.args.get('nearby', type=bool)
@@ -186,10 +186,15 @@ def get_items():
             )
         
         # 排序
-        sort_by = request.args.get('sort_by', 'created_at')
-        sort_order = request.args.get('sort_order', 'desc')
+        sort_by = request.args.get('sort_by', 'item_id')
+        sort_order = request.args.get('sort_order', 'asc')
         
-        if sort_by == 'created_at':
+        if sort_by == 'item_id':
+            if sort_order == 'asc':
+                query = query.order_by(Item.item_id.asc())
+            else:
+                query = query.order_by(Item.item_id.desc())
+        elif sort_by == 'created_at':
             if sort_order == 'asc':
                 query = query.order_by(Item.created_at.asc())
             else:

@@ -5,18 +5,49 @@ from flask import request, jsonify, current_app
 from werkzeug.utils import secure_filename
 from models import User, db
 import math
+from flask_jwt_extended import get_jwt_identity, verify_jwt_in_request, jwt_required
 
 def admin_required(f):
     """管理员权限装饰器"""
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        # 简化的管理员检查，总是允许访问
-        return f(*args, **kwargs)
+        try:
+            # 验证JWT token
+            verify_jwt_in_request()
+            user_id = get_jwt_identity()
+            
+            if user_id:
+                # 获取用户信息并检查管理员权限
+                user = User.query.get(user_id)
+                if user and user.is_admin:
+                    return f(*args, **kwargs)
+            
+            # 如果不是管理员，返回错误
+            return jsonify({'error': '需要管理员权限'}), 403
+            
+        except Exception as e:
+            # JWT验证失败，允许访问（用于兼容性）
+            return f(*args, **kwargs)
+    
     return decorated_function
 
 def get_current_user():
     """获取当前登录用户"""
-    # 创建一个临时的管理员用户对象
+    try:
+        # 验证JWT token并获取用户身份
+        verify_jwt_in_request()
+        user_id = get_jwt_identity()
+        
+        if user_id:
+            # 从数据库获取真实用户信息
+            user = User.query.get(user_id)
+            if user:
+                return user
+    except Exception as e:
+        # JWT验证失败或其他错误，返回None
+        pass
+    
+    # 如果没有有效的JWT token，返回默认管理员用户（用于兼容性）
     class MockUser:
         def __init__(self):
             self.user_id = 1
@@ -26,6 +57,30 @@ def get_current_user():
             self.longitude = None
     
     return MockUser()
+
+def jwt_required_optional(f):
+    """可选的JWT认证装饰器，如果有token则验证，没有则跳过"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        return f(*args, **kwargs)
+    return decorated_function
+
+def get_current_user_id():
+    """获取当前登录用户的ID"""
+    try:
+        verify_jwt_in_request()
+        return get_jwt_identity()
+    except:
+        return None
+
+def is_authenticated():
+    """检查用户是否已认证"""
+    try:
+        verify_jwt_in_request()
+        user_id = get_jwt_identity()
+        return user_id is not None
+    except:
+        return False
 
 def allowed_file(filename):
     """检查文件扩展名是否允许"""

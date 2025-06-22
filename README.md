@@ -181,7 +181,7 @@ Authorization: Bearer <your-jwt-token>
 ## 默认管理员账号
 
 首次运行应用时会自动创建默认管理员账号：
-- **邮箱**: admin@example.com
+- **邮箱**: admin@qq.com
 - **密码**: admin123
 
 **注意**: 生产环境中请及时修改默认密码！
@@ -339,7 +339,7 @@ A: 检查前端域名是否在CORS_ORIGINS配置中
 ## 联系方式
 
 如有问题或建议，请通过以下方式联系：
-- 邮箱: [your-email@example.com]
+- 邮箱: [your-email@qq.com]
 - 项目地址: [repository-url]
 
 ---
