@@ -63,6 +63,18 @@ class ItemCategory(db.Model):
     children = db.relationship('ItemCategory', backref=db.backref('parent', remote_side=[category_id]), lazy='dynamic',cascade='all, delete-orphan')
     items = db.relationship('Item', backref='category', lazy='dynamic')
     
+    def get_total_item_count(self):
+        """递归获取当前分类及其所有子分类的物品总数"""
+        # 当前分类的物品数量
+        current_count = self.items.filter_by(status='available').count()
+        
+        # 递归获取所有子分类的物品数量
+        children_count = 0
+        for child in self.children:
+            children_count += child.get_total_item_count()
+        
+        return current_count + children_count
+    
     def to_dict(self, include_children=False):
         """转换为字典"""
         data = {

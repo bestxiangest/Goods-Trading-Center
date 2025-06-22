@@ -378,7 +378,7 @@ def get_my_items():
     """获取当前用户发布的物品"""
     try:
         # 使用固定的管理员用户ID
-        current_user_id = 1
+        current_user_id = get_current_user().user_id
         page = request.args.get('page', 1, type=int)
         per_page = request.args.get('per_page', 20, type=int)
         status = request.args.get('status')

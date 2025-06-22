@@ -22,8 +22,8 @@ def get_categories():
         categories_data = []
         for category in categories:
             category_data = category.to_dict(include_children=include_children)
-            # 添加物品数量统计
-            category_data['item_count'] = category.items.filter_by(status='available').count()
+            # 添加物品数量统计（包含所有子分类的物品数量）
+            category_data['item_count'] = category.get_total_item_count()
             categories_data.append(category_data)
         
         return success_response(
@@ -44,7 +44,7 @@ def get_categories_tree():
         def build_tree(category):
             """递归构建分类树"""
             category_data = category.to_dict()
-            category_data['item_count'] = category.items.filter_by(status='available').count()
+            category_data['item_count'] = category.get_total_item_count()
             
             children = category.children.all()
             if children:
@@ -73,7 +73,7 @@ def get_category(category_id):
             return error_response("分类不存在", 404)
         
         category_data = category.to_dict(include_children=True)
-        category_data['item_count'] = category.items.filter_by(status='available').count()
+        category_data['item_count'] = category.get_total_item_count()
         
         # 获取父分类信息
         if category.parent:
@@ -251,7 +251,7 @@ def search_categories():
         categories_data = []
         for category in categories:
             category_data = category.to_dict()
-            category_data['item_count'] = category.items.filter_by(status='available').count()
+            category_data['item_count'] = category.get_total_item_count()
             
             # 添加完整路径
             path = []
@@ -278,22 +278,20 @@ def get_popular_categories():
         limit = request.args.get('limit', 10, type=int)
         limit = min(limit, 50)  # 限制最大数量
         
-        # 查询有物品的分类，按物品数量排序
-        from sqlalchemy import func
-        from models import Item
+        # 获取所有分类并计算包含子分类的物品总数
+        all_categories = ItemCategory.query.all()
         
-        popular_categories = db.session.query(
-            ItemCategory,
-            func.count(Item.item_id).label('item_count')
-        ).join(
-            Item, ItemCategory.category_id == Item.category_id
-        ).filter(
-            Item.status == 'available'
-        ).group_by(
-            ItemCategory.category_id
-        ).order_by(
-            func.count(Item.item_id).desc()
-        ).limit(limit).all()
+        categories_with_count = []
+        for category in all_categories:
+            total_count = category.get_total_item_count()
+            if total_count > 0:  # 只包含有物品的分类
+                categories_with_count.append((category, total_count))
+        
+        # 按物品数量排序
+        categories_with_count.sort(key=lambda x: x[1], reverse=True)
+        
+        # 取前limit个
+        popular_categories = categories_with_count[:limit]
         
         categories_data = []
         for category, item_count in popular_categories:
