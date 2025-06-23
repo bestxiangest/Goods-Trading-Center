@@ -1474,6 +1474,8 @@ function deleteUser(userId, username) {
 
 // 分类管理函数
 function showAddCategoryModal() {
+    // 加载父分类选项
+    loadParentCategoriesForSelect();
     const modal = new bootstrap.Modal(document.getElementById('addCategoryModal'));
     modal.show();
 }
@@ -1645,7 +1647,7 @@ function loadCategoriesForSelect() {
 function loadUsersForSelect() {
     apiRequest('/users?per_page=1000')
         .then(response => {
-            const users = response.data?.items || [];
+            const users = response.data?.users || [];
             const select = document.getElementById('itemOwner');
             
             select.innerHTML = '<option value="">请选择所有者</option>' +
@@ -1653,6 +1655,22 @@ function loadUsersForSelect() {
         })
         .catch(error => {
             console.error('Failed to load users for select:', error);
+        });
+}
+
+// 为父分类选择框加载分类
+function loadParentCategoriesForSelect() {
+    apiRequest('/categories/tree')
+        .then(response => {
+            const categories = response.data || [];
+            const select = document.getElementById('parentCategory');
+            const flatCategories = flattenCategories(categories);
+            
+            select.innerHTML = '<option value="">无（顶级分类）</option>' +
+                flatCategories.map(cat => `<option value="${cat.id}">${cat.name}</option>`).join('');
+        })
+        .catch(error => {
+            console.error('Failed to load parent categories for select:', error);
         });
 }
 
