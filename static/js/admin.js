@@ -320,7 +320,7 @@ function loadUsers(page = 1, search = '', filter = '') {
     apiRequest(`/users?${params}`)
         .then(response => {
             const data = response.data || {};
-            displayUsers(data.items || []);
+            displayUsers(data.users || []);
             updatePagination('users', data.pagination || {});
         })
         .catch(error => {
