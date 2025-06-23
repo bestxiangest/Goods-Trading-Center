@@ -180,7 +180,7 @@ def validate_required_fields(data, required_fields):
         if field not in data or not data[field]:
             missing_fields.append(field)
     
-    if missing_fields:
+    if missing_fields: 
         return f"缺少必需字段: {', '.join(missing_fields)}"
     return None
 
